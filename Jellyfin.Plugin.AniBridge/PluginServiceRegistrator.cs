@@ -23,6 +23,8 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
             .ConfigurePrimaryHttpMessageHandler(ConfigureHandler);
         serviceCollection.AddHttpClient("AnimeNexus", c => c.Timeout = TimeSpan.FromSeconds(HttpClientTimeoutSeconds))
             .ConfigurePrimaryHttpMessageHandler(ConfigureHandler);
+        serviceCollection.AddHttpClient("AniWatch", c => c.Timeout = TimeSpan.FromSeconds(HttpClientTimeoutSeconds))
+            .ConfigurePrimaryHttpMessageHandler(ConfigureHandler);
 
         // Register each site adapter as itself (used directly by the download pipeline) and
         // again as the shared StreamingSiteService base (so the controller and download
@@ -31,10 +33,12 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         // lines here — no controller/config changes needed.
         AddSite<AnikotoService>(serviceCollection);
         AddSite<AnimeNexusService>(serviceCollection);
+        AddSite<AniWatchService>(serviceCollection);
 
         serviceCollection.AddSingleton<DownloadHistoryService>();
         serviceCollection.AddSingleton<DownloadService>();
         serviceCollection.AddSingleton<IStreamExtractor, MegaplayExtractor>();
+        serviceCollection.AddSingleton<IStreamExtractor, DoodStreamExtractor>();
     }
 
     private static void AddSite<TService>(IServiceCollection serviceCollection)

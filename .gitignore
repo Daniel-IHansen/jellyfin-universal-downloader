@@ -10,3 +10,4 @@ packages/
 .idea/
 /build/
 /publish/
+.claude/settings.local.json

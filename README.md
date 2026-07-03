@@ -12,12 +12,13 @@ Series View| Search View
 
 - **Search and browse** anime and series with cover art, popular titles, and new releases
 - **Download** individual episodes, full seasons, or entire series
-- **Two sites supported**, each a self-contained adapter — adding another site is a single new class, no controller/config changes needed:
+- **Three sites supported**, each a self-contained adapter — adding another site is a single new class, no controller/config changes needed:
   | Site | Content | Languages | Status |
   |------|---------|-----------|--------|
   | [anikoto.net](https://anikoto.net) | Anime | English Sub + Dub | Best-effort (built against a community-documented third-party API — anikoto.net itself blocks automated access) |
   | [anime.nexus](https://anime.nexus) | Anime | English Sub + Dub | **Experimental, disabled by default** — no public API exists and the site blocks automated research tools, so this integration is an unverified guess at its REST conventions |
-- Both sites resolve directly to a playable stream URL via their own APIs (Anikoto's Megaplay-backed server needs a dedicated extractor to decode its embed page)
+  | [aniwatch.one](https://aniwatch.one) | Anime | English Sub + Dub | Verified against live HTML. Only its DoodStream-backed server has a working extractor so far — the site also offers MegaCloud/rabbitstream and a custom-player server per episode, but those aren't surfaced yet since no extractor decodes them |
+- Anikoto/Anime Nexus resolve directly to a playable stream URL via their own APIs (Anikoto's Megaplay-backed server needs a dedicated extractor to decode its embed page); AniWatch scrapes the embed URL straight out of the episode page HTML and hands it to the matching extractor (DoodStream)
 - **Download manager** with real-time progress, cancel, retry, and batch operations
 - **Automatic retries** with exponential backoff, provider fallback, and optional Sub↔Dub language fallback
 - **Auto library scan** so new episodes appear in Jellyfin immediately

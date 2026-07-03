@@ -21,6 +21,18 @@ public interface IStreamExtractor
     string? RequiredReferer => null;
 
     /// <summary>
+    /// Gets whether <see cref="GetDirectLinkAsync"/> resolves to a single progressive file
+    /// (e.g. a direct MP4) rather than an HLS playlist. When <c>true</c> and
+    /// <see cref="RequiredReferer"/> is set, the referer is passed straight to ffmpeg via its own
+    /// "-headers" flag and the "aac_adtstoasc" bitstream filter (needed only for TS-sourced HLS
+    /// audio) is skipped. When <c>false</c> (default), a <see cref="RequiredReferer"/> instead
+    /// triggers pre-downloading the HLS segments to a local file — see the comment in
+    /// <c>DownloadService.DownloadWithFfmpegAsync</c> for why that workaround exists for
+    /// providers like Megaplay.
+    /// </summary>
+    bool IsProgressiveStream => false;
+
+    /// <summary>
     /// Extracts the direct video link (and, if the provider exposes one separately, a subtitle
     /// track) from a provider embed URL.
     /// </summary>

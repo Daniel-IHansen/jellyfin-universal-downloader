@@ -557,6 +557,7 @@ public class DownloadService
             var resolveResult = await extractor.GetDirectLinkAsync(embedUrl, token).ConfigureAwait(false);
             streamUrl = resolveResult?.VideoUrl;
             task.RequiredReferer = extractor.RequiredReferer;
+            task.IsProgressiveStream = extractor.IsProgressiveStream;
             task.SubtitleUrl = resolveResult?.SubtitleUrl;
             task.SubtitleLanguage = resolveResult?.SubtitleLanguage;
         }
@@ -855,7 +856,7 @@ public class DownloadService
         // concatenate them into a local .ts file; ffmpeg then only ever sees a local file, so
         // none of its network-fetch safety checks apply at all.
         string? localSegmentFile = null;
-        if (!string.IsNullOrEmpty(task.RequiredReferer))
+        if (!string.IsNullOrEmpty(task.RequiredReferer) && !task.IsProgressiveStream)
         {
             var dir = Path.GetDirectoryName(task.OutputPath) ?? Path.GetTempPath();
             localSegmentFile = Path.Combine(dir, $".{Path.GetFileNameWithoutExtension(task.OutputPath)}.{Guid.NewGuid():N}.ts.tmp");
@@ -903,6 +904,14 @@ public class DownloadService
                 startInfo.ArgumentList.Add("1");
                 startInfo.ArgumentList.Add("-reconnect_delay_max");
                 startInfo.ArgumentList.Add("5");
+
+                // Progressive-file providers (e.g. DoodStream) whose CDN checks Referer weren't
+                // pre-downloaded above, so ffmpeg needs to send it itself on the direct fetch.
+                if (!string.IsNullOrEmpty(task.RequiredReferer))
+                {
+                    startInfo.ArgumentList.Add("-headers");
+                    startInfo.ArgumentList.Add($"Referer: {task.RequiredReferer}\r\n");
+                }
             }
 
             startInfo.ArgumentList.Add("-i");
@@ -926,8 +935,16 @@ public class DownloadService
 
             startInfo.ArgumentList.Add("-c");
             startInfo.ArgumentList.Add("copy");
-            startInfo.ArgumentList.Add("-bsf:a");
-            startInfo.ArgumentList.Add("aac_adtstoasc");
+
+            if (!task.IsProgressiveStream)
+            {
+                // Converts ADTS-framed AAC (as carried in a TS-sourced HLS stream) to the ASC
+                // framing MKV/MP4 expect. Only relevant for TS sources — a provider's own
+                // progressive file (e.g. DoodStream's MP4) already has ASC framing, and applying
+                // this filter to it fails with "Error parsing ADTS frame header!".
+                startInfo.ArgumentList.Add("-bsf:a");
+                startInfo.ArgumentList.Add("aac_adtstoasc");
+            }
 
             if (localSubtitleFile != null)
             {
@@ -1189,6 +1206,10 @@ public class DownloadTask
     [JsonIgnore]
     public string? RequiredReferer { get; set; }
 
+    /// <summary>Gets or sets whether <see cref="StreamUrl"/> is a single progressive file rather than an HLS playlist — see <see cref="Extractors.IStreamExtractor.IsProgressiveStream"/>.</summary>
+    [JsonIgnore]
+    public bool IsProgressiveStream { get; set; }
+
     /// <summary>Gets or sets the direct URL of a subtitle file the provider serves separately from the video, if any.</summary>
     [JsonIgnore]
     public string? SubtitleUrl { get; set; }
@@ -1221,7 +1242,7 @@ public class DownloadTask
     /// <summary>Gets or sets the file size in bytes.</summary>
     public long FileSizeBytes { get; set; }
 
-    /// <summary>Gets or sets the source site ("anikoto" or "animenexus").</summary>
+    /// <summary>Gets or sets the source site (e.g. "anikoto", "animenexus", "aniwatch").</summary>
     public string Source { get; set; } = "anikoto";
 
     /// <summary>Gets or sets the username of the user who queued the download.</summary>

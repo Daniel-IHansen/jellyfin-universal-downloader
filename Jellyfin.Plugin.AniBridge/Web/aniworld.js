@@ -88,6 +88,7 @@ export default function (view, params) {
         sto: ['dub'],
         anikoto: ['sub', 'dub'],
         animenexus: ['sub', 'dub'],
+        aniwatch: ['sub', 'dub'],
     };
 
     function langIcon(langKey) {

@@ -100,6 +100,18 @@ public class PluginConfiguration : BasePluginConfiguration
                 DownloadPathDub = "/Media/Anime/dub",
             },
         },
+        new SiteConfigEntry
+        {
+            Source = "aniwatch",
+            Config = new SiteDownloaderConfig
+            {
+                Enabled = true,
+                PreferredProvider = "DoodStream",
+                DownloadPath = "/Media/Anime",
+                DownloadPathSub = "/Media/Anime/sub",
+                DownloadPathDub = "/Media/Anime/dub",
+            },
+        },
     };
 
     /// <summary>

@@ -177,6 +177,43 @@
                         </div>
                     </div>
 
+                    <!-- AniWatch Settings -->
+                    <div class="verticalSection">
+                        <h3 class="sectionTitle">AniWatch (aniwatch.one) — English Sub &amp; Dub</h3>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label>
+                                <input is="emby-checkbox" type="checkbox" id="chkAniwatchEnabled" />
+                                <span>Enable AniWatch</span>
+                            </label>
+                            <div class="fieldDescription checkboxFieldDescription">
+                                Enable searching and downloading anime from AniWatch. Offers both English Sub and English Dub.
+                                Scraped directly from the site's own HTML (no anti-bot layer encountered). Of the servers it offers
+                                per episode, only the DoodStream-backed one has a working extractor so far — episodes without a
+                                DoodStream server won't show a download option yet.
+                            </div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="txtAniwatchPathSub">Download Path (English Sub)</label>
+                            <input is="emby-input" type="text" id="txtAniwatchPathSub" placeholder="/Media/Anime/sub" />
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="txtAniwatchPathDub">Download Path (English Dub)</label>
+                            <input is="emby-input" type="text" id="txtAniwatchPathDub" placeholder="/Media/Anime/dub" />
+                            <div class="fieldDescription">Leave empty to use the English Sub path above.</div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="selAniwatchLanguage">Preferred Language</label>
+                            <select is="emby-select" id="selAniwatchLanguage">
+                                <option value="sub">English Sub</option>
+                                <option value="dub">English Dub</option>
+                            </select>
+                        </div>
+                    </div>
+
                     <div>
                         <button is="emby-button" type="submit" class="raised button-submit block">
                             <span>Save</span>

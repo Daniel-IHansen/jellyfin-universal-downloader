@@ -35,6 +35,15 @@ public static class PathHelper
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     /// <summary>
+    /// Regex to extract the episode number from AniWatch's flat-episode-list URL shape
+    /// (<c>/watch/{slug}/episode/{n}</c>) — like Anikoto/Anime Nexus, this site has no season
+    /// concept, so everything is treated as Season 1.
+    /// </summary>
+    public static readonly Regex FlatEpisodePathFromUrl = new(
+        @"/episode/(?<episode>\d+)(?:$|[/?\#])",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    /// <summary>
     /// Regex to extract the series slug from a URL.
     /// Supports /anime/stream/{slug} (aniworld) and /serie/{slug} (s.to).
     /// </summary>
@@ -92,6 +101,12 @@ public static class PathHelper
             return (1, int.Parse(flatMatch.Groups["episode"].Value));
         }
 
+        var flatPathMatch = FlatEpisodePathFromUrl.Match(url);
+        if (flatPathMatch.Success)
+        {
+            return (1, int.Parse(flatPathMatch.Groups["episode"].Value));
+        }
+
         return (0, 0);
     }
 
@@ -127,6 +142,15 @@ public static class PathHelper
         if (flatMatch.Success)
         {
             var episode = int.Parse(flatMatch.Groups["episode"].Value);
+            var fileName = $"{safeName} - S01E{episode:D2}.mkv";
+
+            return Path.Combine(basePath, safeName, "Season 01", fileName);
+        }
+
+        var flatPathMatch = FlatEpisodePathFromUrl.Match(episodeUrl);
+        if (flatPathMatch.Success)
+        {
+            var episode = int.Parse(flatPathMatch.Groups["episode"].Value);
             var fileName = $"{safeName} - S01E{episode:D2}.mkv";
 
             return Path.Combine(basePath, safeName, "Season 01", fileName);

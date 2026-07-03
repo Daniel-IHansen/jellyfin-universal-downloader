@@ -44,6 +44,13 @@ export default function (view, params) {
             view.querySelector('#txtAnimenexusPathDub').value = animenexus.DownloadPathDub || '';
             view.querySelector('#selAnimenexusLanguage').value = animenexus.PreferredLanguage || 'sub';
 
+            // AniWatch (Sub + Dub)
+            var aniwatch = getSiteConfig(config, 'aniwatch');
+            view.querySelector('#chkAniwatchEnabled').checked = aniwatch.Enabled !== false;
+            view.querySelector('#txtAniwatchPathSub').value = aniwatch.DownloadPathSub || aniwatch.DownloadPath || '';
+            view.querySelector('#txtAniwatchPathDub').value = aniwatch.DownloadPathDub || '';
+            view.querySelector('#selAniwatchLanguage').value = aniwatch.PreferredLanguage || 'sub';
+
             Dashboard.hideLoadingMsg();
         });
     }
@@ -79,6 +86,15 @@ export default function (view, params) {
             animenexus.DownloadPath = animenexus.DownloadPathSub;
             animenexus.PreferredLanguage = view.querySelector('#selAnimenexusLanguage').value;
             animenexus.PreferredProvider = 'AnimeNexus';
+
+            // AniWatch
+            var aniwatch = getSiteConfig(config, 'aniwatch');
+            aniwatch.Enabled = view.querySelector('#chkAniwatchEnabled').checked;
+            aniwatch.DownloadPathSub = view.querySelector('#txtAniwatchPathSub').value.trim();
+            aniwatch.DownloadPathDub = view.querySelector('#txtAniwatchPathDub').value.trim();
+            aniwatch.DownloadPath = aniwatch.DownloadPathSub;
+            aniwatch.PreferredLanguage = view.querySelector('#selAniwatchLanguage').value;
+            aniwatch.PreferredProvider = 'DoodStream';
 
             ApiClient.updatePluginConfiguration(pluginId, config).then(function () {
                 Dashboard.processPluginConfigurationUpdateResult();
