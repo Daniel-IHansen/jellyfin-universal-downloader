@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AniBridge Downloader</title>
+</head>
+<body>
+    <div id="AniBridgePage" data-role="page" class="page type-interior" data-controller="__plugin/AniBridgeDownloaderJS">
+        <style>
+        .aw { max-width: 1200px; margin: 0 auto; padding: 1em; font-family: inherit; }
+
+        /* Tabs */
+        .aw-tabs { display: flex; gap: 0; border-bottom: 2px solid rgba(255,255,255,0.1); margin-bottom: 1.5em; }
+        .aw-tab { padding: 0.7em 1.5em; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 0.95em; opacity: 0.7; transition: all 0.2s; }
+        .aw-tab:hover { opacity: 1; }
+        .aw-tab.active { border-bottom-color: #00a4dc; color: #00a4dc; opacity: 1; }
+        .aw-tab .aw-badge { background: #00a4dc; color: #fff; border-radius: 10px; padding: 0.1em 0.5em; font-size: 0.75em; margin-left: 0.4em; }
+
+        /* Search */
+        .aw-search { display: flex; gap: 0.5em; margin-bottom: 1.5em; }
+        .aw-search input { flex: 1; padding: 0.6em 1em; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: inherit; font-size: 1em; outline: none; }
+        .aw-search input:focus { border-color: #00a4dc; }
+
+        /* Buttons */
+        .aw-btn { padding: 0.5em 1em; border-radius: 6px; border: none; cursor: pointer; font-size: 0.85em; transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.4em; }
+        .aw-btn-primary { background: #00a4dc; color: white; }
+        .aw-btn-primary:hover { background: #0090c4; }
+        .aw-btn-success { background: #4caf50; color: white; }
+        .aw-btn-success:hover { background: #45a049; }
+        .aw-btn-all-seasons { background: #e67e22; color: white; }
+        .aw-btn-all-seasons:hover { background: #cf6d17; }
+        .aw-btn-danger { background: #f44336; color: white; }
+        .aw-btn-danger:hover { background: #e53935; }
+        .aw-btn-warning { background: #ff9800; color: white; }
+        .aw-btn-warning:hover { background: #f57c00; }
+        .aw-btn-secondary { background: rgba(255,255,255,0.1); color: inherit; }
+        .aw-btn-secondary:hover { background: rgba(255,255,255,0.18); }
+        .aw-btn-sm { padding: 0.3em 0.7em; font-size: 0.8em; }
+        .aw-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* Source logo (inline in titles) */
+        .aw-source-logo { height: 1.2em; vertical-align: middle; }
+
+        /* Series detail */
+        .aw-series { display: flex; gap: 2em; margin-bottom: 1.5em; }
+        .aw-cover { width: 220px; border-radius: 10px; flex-shrink: 0; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
+        .aw-meta h2 { margin: 0 0 0.5em; font-size: 1.5em; display: flex; align-items: center; gap: 0.4em; }
+        .aw-meta p { opacity: 0.7; line-height: 1.6; margin: 0.5em 0; }
+        .aw-genres { display: flex; gap: 0.4em; flex-wrap: wrap; margin: 0.8em 0; }
+        .aw-genre { background: rgba(0,164,220,0.2); border: 1px solid rgba(0,164,220,0.3); padding: 0.2em 0.6em; border-radius: 12px; font-size: 0.78em; }
+
+        /* Series actions (seasons) */
+        .aw-series-actions { display: flex; align-items: flex-start; gap: 1em; margin-bottom: 1.2em; }
+
+        /* Season pills */
+        .aw-seasons { display: flex; gap: 0.4em; flex-wrap: wrap; flex: 1; }
+        .aw-season { padding: 0.45em 1.1em; border-radius: 20px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); color: inherit; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
+        .aw-season:hover { background: rgba(0,164,220,0.15); border-color: rgba(0,164,220,0.3); }
+        .aw-season.active { background: rgba(0,164,220,0.3); border-color: #00a4dc; color: #fff; }
+
+        /* Season actions bar */
+        .aw-season-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8em; padding: 0.5em 0; gap: 0.6em; }
+        .aw-season-actions .aw-ep-count { opacity: 0.5; font-size: 0.85em; flex: 1; }
+        .aw-lang-select { padding: 0.3em 0.7em; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: inherit; font-size: 0.82em; cursor: pointer; }
+        .aw-lang-select:focus { border-color: #00a4dc; outline: none; }
+
+        /* Episode list */
+        .aw-episodes { display: flex; flex-direction: column; gap: 0.4em; }
+        .aw-ep { display: flex; align-items: center; gap: 0.5em; padding: 0.8em 1em; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; transition: all 0.15s; }
+        .aw-ep:hover { background: rgba(255,255,255,0.06); }
+        .aw-ep-num { font-weight: 600; min-width: 3em; opacity: 0.5; font-size: 0.9em; }
+        .aw-ep-title { flex: 1; font-size: 0.9em; }
+        .aw-ep-actions { display: flex; gap: 0.4em; }
+        .aw-ep-providers { padding: 0.8em 1em; margin-top: -1px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.06); border-radius: 0 0 8px 8px; }
+        .aw-ep-providers .aw-lang-group { margin-bottom: 0.5em; }
+        .aw-ep-providers .aw-lang-label { font-weight: 600; font-size: 0.8em; opacity: 0.6; margin-bottom: 0.3em; }
+        .aw-ep-providers .aw-provider-btns { display: flex; gap: 0.3em; flex-wrap: wrap; }
+        .aw-ep-downloaded { display: inline-flex; align-items: center; gap: 0.3em; opacity: 0.7; color: #4caf50; vertical-align: middle; }
+        .aw-ep-downloaded img { height: 1.1em; vertical-align: middle; }
+
+        /* Downloads */
+        .aw-dl { display: flex; flex-direction: column; gap: 0.5em; }
+        .aw-dl-item { display: flex; align-items: center; gap: 1em; padding: 1em; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; }
+        .aw-dl-info { flex: 1; min-width: 0; }
+        .aw-dl-info strong { display: flex; align-items: center; gap: 0.3em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .aw-dl-info small { opacity: 0.5; }
+        .aw-dl-progress { width: 120px; height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; flex-shrink: 0; }
+        .aw-dl-bar { height: 100%; background: #00a4dc; transition: width 0.4s ease; border-radius: 3px; }
+        .aw-dl-pct { min-width: 3em; text-align: right; font-size: 0.85em; opacity: 0.7; }
+        .aw-status { padding: 0.2em 0.6em; border-radius: 4px; font-size: 0.75em; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .aw-status-downloading { background: rgba(0,164,220,0.25); color: #4dc9f6; }
+        .aw-status-completed { background: rgba(76,175,80,0.25); color: #81c784; }
+        .aw-status-failed { background: rgba(244,67,54,0.25); color: #ef5350; }
+        .aw-status-queued { background: rgba(255,152,0,0.25); color: #ffb74d; }
+        .aw-status-resolving, .aw-status-extracting { background: rgba(156,39,176,0.25); color: #ce93d8; }
+        .aw-status-retrying { background: rgba(255,152,0,0.25); color: #ffb74d; animation: aw-pulse 1.5s infinite; }
+        .aw-status-cancelled { background: rgba(158,158,158,0.25); color: #bdbdbd; }
+        @keyframes aw-pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+        .aw-dl-error { color: #ef5350; font-size: 0.8em; margin-top: 0.3em; }
+        .aw-dl-retry-info { color: #ffb74d; font-size: 0.78em; margin-top: 0.2em; }
+        .aw-dl-size { opacity: 0.5; font-size: 0.78em; margin-left: 0.5em; }
+        .aw-dl-actions { display: flex; gap: 0.3em; margin-top: 1em; margin-bottom: 0.8em; }
+        .aw-dl-btns { display: flex; gap: 0.3em; flex-shrink: 0; }
+
+        /* Stats cards */
+        .aw-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1em; margin-bottom: 1.5em; }
+        .aw-stat { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 1em 1.2em; text-align: center; }
+        .aw-stat-value { font-size: 1.8em; font-weight: 700; color: #00a4dc; }
+        .aw-stat-label { font-size: 0.78em; opacity: 0.5; margin-top: 0.3em; }
+        .aw-stat-value.green { color: #4caf50; }
+        .aw-stat-value.red { color: #ef5350; }
+        .aw-stat-value.orange { color: #ff9800; }
+
+        /* History table */
+        .aw-history { display: flex; flex-direction: column; gap: 0.4em; }
+        .aw-hist-item { display: flex; align-items: center; gap: 1em; padding: 0.8em 1em; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; }
+        .aw-hist-info { flex: 1; min-width: 0; }
+        .aw-hist-info strong { display: flex; align-items: center; gap: 0.3em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.95em; }
+        .aw-hist-info small { opacity: 0.5; font-size: 0.8em; }
+        .aw-hist-meta { display: flex; gap: 0.8em; align-items: center; flex-shrink: 0; }
+        .aw-hist-meta .aw-hist-size { opacity: 0.5; font-size: 0.82em; min-width: 5em; text-align: right; }
+        .aw-hist-meta .aw-hist-date { opacity: 0.4; font-size: 0.78em; min-width: 8em; text-align: right; }
+        .aw-hist-filters { display: flex; gap: 0.5em; margin-bottom: 1em; flex-wrap: wrap; align-items: center; }
+        .aw-hist-filters select { padding: 0.4em 0.7em; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: inherit; font-size: 0.85em; }
+        .aw-hist-more { text-align: center; padding: 1em; }
+
+        /* Browse tabs */
+        .aw-browse-tabs { display: flex; gap: 0.5em; margin-bottom: 1.5em; }
+        .aw-browse-pill { padding: 0.5em 1.2em; border-radius: 20px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); color: inherit; cursor: pointer; font-size: 0.9em; transition: all 0.2s; }
+        .aw-browse-pill:hover { background: rgba(0,164,220,0.15); border-color: rgba(0,164,220,0.3); }
+        .aw-browse-pill.active { background: rgba(0,164,220,0.3); border-color: #00a4dc; color: #fff; }
+
+        /* Browse grid with cover images */
+        .aw-browse-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1em; }
+        .aw-browse-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; overflow: hidden; cursor: pointer; transition: all 0.2s; position: relative; }
+        .aw-browse-card:hover { background: rgba(255,255,255,0.08); border-color: rgba(0,164,220,0.3); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .aw-browse-cover { width: 100%; aspect-ratio: 2/3; object-fit: cover; display: block; background: rgba(255,255,255,0.03); }
+        .aw-cover-placeholder { background: linear-gradient(110deg, rgba(255,255,255,0.03) 30%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.03) 70%); background-size: 200% 100%; animation: aw-shimmer 1.5s ease-in-out infinite; }
+        @keyframes aw-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        .aw-browse-info { padding: 0.6em 0.8em; }
+        .aw-browse-info h3 { margin: 0; font-size: 0.85em; color: #fff; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .aw-browse-info small { display: block; margin-top: 0.3em; opacity: 0.5; font-size: 0.75em; }
+        .aw-browse-source-badge { position: absolute; top: 0.4em; right: 0.4em; height: 1.4em; border-radius: 999px; padding: 0.15em 0.3em; background: rgba(0,0,0,0.5); }
+
+        /* Browse section heading */
+        .aw-browse-section-title { font-size: 1.1em; font-weight: 600; margin: 1.2em 0 0.8em; }
+
+        /* Utility */
+        .aw-empty { text-align: center; padding: 3em; opacity: 0.4; }
+        .aw-empty-icon { font-size: 2.5em; margin-bottom: 0.3em; }
+        .aw-back { margin-bottom: 1.2em; }
+        .aw-icon { width: 1em; height: 1em; display: inline-block; vertical-align: middle; margin-right: 0.35em; stroke: currentColor; fill: none; stroke-width: 2; }
+        .aw-warning { background: rgba(255, 165, 0, 0.15); border: 1px solid rgba(255, 165, 0, 0.4); border-radius: 8px; padding: 0.8em 1em; margin-bottom: 1.2em; display: flex; align-items: center; gap: 0.6em; font-size: 0.9em; color: #ffcc80; }
+        .aw-spinner { display: inline-block; width: 1em; height: 1em; border: 2px solid rgba(255,255,255,0.2); border-top-color: #00a4dc; border-radius: 50%; animation: aw-spin 0.8s linear infinite; }
+        @keyframes aw-spin { to { transform: rotate(360deg); } }
+        .aw-loading { display: flex; align-items: center; justify-content: center; gap: 0.8em; padding: 2em; opacity: 0.6; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .aw-series { flex-direction: column; align-items: center; text-align: center; }
+            .aw-cover { width: 160px; }
+            .aw-genres { justify-content: center; }
+            .aw-grid { grid-template-columns: 1fr; }
+            .aw-stats { grid-template-columns: repeat(2, 1fr); }
+            .aw-hist-item { flex-direction: column; align-items: flex-start; }
+            .aw-hist-meta { width: 100%; justify-content: space-between; }
+            .aw-browse-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 0.6em; }
+        }
+        </style>
+        <div data-role="content">
+            <div class="content-primary aw">
+                <div class="sectionTitleContainer flex align-items-center" style="justify-content:space-between">
+                    <h2 class="sectionTitle">AniBridge Downloader</h2>
+                    <div style="display:flex;gap:0.5em;align-items:center">
+                        <a href="https://github.com/SiroxCW/Jellyfin-AniWorld-Downloader" target="_blank" class="aw-btn aw-btn-secondary aw-btn-sm" title="View Source Code" style="text-decoration:none">
+                            <i class="aw-icon" data-lucide="github"></i>
+                        </a>
+                        <a id="aw-settings-btn" href="#!/configurationpage?name=AniBridgeConfig" class="aw-btn aw-btn-secondary aw-btn-sm" title="Plugin Settings" style="text-decoration:none">
+                            <i class="aw-icon" data-lucide="settings"></i>
+                            Settings
+                        </a>
+                    </div>
+                </div>
+
+                <div id="aw-maintenance-banner" class="aw-warning" style="display:none">
+                    <i class="aw-icon" data-lucide="wrench"></i>
+                    <span id="aw-maintenance-text"></span>
+                </div>
+
+                <div class="aw-tabs">
+                    <div class="aw-tab active" data-tab="search" onclick="window.AW.switchTab('search')"><i class="aw-icon" data-lucide="search"></i> Search</div>
+                    <div class="aw-tab" data-tab="browse" onclick="window.AW.switchTab('browse')"><i class="aw-icon" data-lucide="compass"></i> Browse</div>
+                    <div class="aw-tab" data-tab="downloads" onclick="window.AW.switchTab('downloads')"><i class="aw-icon" data-lucide="download"></i> Downloads <span id="aw-dl-badge" class="aw-badge" style="display:none">0</span></div>
+                    <div class="aw-tab" data-tab="history" onclick="window.AW.switchTab('history')"><i class="aw-icon" data-lucide="bar-chart-3"></i> History</div>
+                </div>
+
+                <div id="searchTab">
+                    <div class="aw-search">
+                        <input type="text" id="aw-search-input" placeholder="Search anime and series..." />
+                        <button class="aw-btn aw-btn-primary" onclick="window.AW.search()">Search</button>
+                    </div>
+                    <div id="aw-content"></div>
+                </div>
+
+                <div id="browseTab" style="display:none">
+                    <div class="aw-browse-tabs">
+                        <button class="aw-browse-pill active" data-section="popular" onclick="window.AW.switchBrowseSection('popular', this)"><i class="aw-icon" data-lucide="flame"></i> Popular</button>
+                        <button class="aw-browse-pill" data-section="new" onclick="window.AW.switchBrowseSection('new', this)"><i class="aw-icon" data-lucide="sparkles"></i> New Releases</button>
+                    </div>
+                    <div id="aw-browse-content"></div>
+                </div>
+
+                <div id="downloadsTab" style="display:none">
+                    <div id="aw-downloads"></div>
+                </div>
+
+                <div id="historyTab" style="display:none">
+                    <div id="aw-history-stats"></div>
+                    <div id="aw-history-filters-container"></div>
+                    <div id="aw-history"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AniBridge Downloader Settings</title>
+</head>
+<body>
+    <div id="AniBridgeConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-select,emby-checkbox" data-controller="__plugin/AniBridgeConfigJS">
+        <div data-role="content">
+            <div class="content-primary">
+                <form id="AniBridgeConfigForm">
+                    <div class="sectionTitleContainer flex align-items-center">
+                        <h2 class="sectionTitle">AniBridge Downloader Settings</h2>
+                    </div>
+
+                    <!-- General Settings -->
+                    <div class="verticalSection">
+                        <h3 class="sectionTitle">General</h3>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="txtMaxDownloads">Max Concurrent Downloads</label>
+                            <input is="emby-input" type="number" id="txtMaxDownloads" min="1" max="5" />
+                            <div class="fieldDescription">Maximum number of simultaneous downloads (1-5). Lower values are recommended to avoid rate limiting.</div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="txtMaxRetries">Max Retry Attempts</label>
+                            <input is="emby-input" type="number" id="txtMaxRetries" min="0" max="10" />
+                            <div class="fieldDescription">
+                                Number of times to retry a failed download (0 = no retries).
+                                Uses exponential backoff between attempts and will try alternative providers on failure.
+                            </div>
+                        </div>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label>
+                                <input is="emby-checkbox" type="checkbox" id="chkAutoScan" />
+                                <span>Auto-scan library after download</span>
+                            </label>
+                            <div class="fieldDescription checkboxFieldDescription">
+                                Automatically trigger a Jellyfin library scan when a download completes.
+                                This makes new episodes appear in your library immediately.
+                            </div>
+                        </div>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label>
+                                <input is="emby-checkbox" type="checkbox" id="chkNonAdminAccess" />
+                                <span>Enable for non-admin users</span>
+                            </label>
+                            <div class="fieldDescription checkboxFieldDescription">
+                                Allow non-admin users to access the AniBridge Downloader UI via the sidebar.
+                                Requires the <a href="https://github.com/IAmParadox27/jellyfin-plugin-file-transformation" target="_blank">File Transformation</a> plugin (recommended) or falls back to direct index.html modification.
+                                <strong>A server restart is required after changing this setting.</strong>
+                            </div>
+                        </div>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label>
+                                <input is="emby-checkbox" type="checkbox" id="chkMaintenanceMode" />
+                                <span>Enable Maintenance Mode</span>
+                            </label>
+                            <div class="fieldDescription checkboxFieldDescription">
+                                Block new downloads while allowing the current queue to finish.
+                                Users will see a maintenance message and download buttons will be disabled.
+                            </div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="txtMaintenanceMessage">Maintenance Message</label>
+                            <input is="emby-input" type="text" id="txtMaintenanceMessage"
+                                   placeholder="The downloader is currently under maintenance..." />
+                            <div class="fieldDescription">Message displayed to users when maintenance mode is active.</div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="txtProxyUrl">Proxy Server</label>
+                            <input is="emby-input" type="text" id="txtProxyUrl"
+                                   placeholder="http://proxy:8080" />
+                            <div class="fieldDescription">
+                                HTTP proxy for all network requests and downloads (e.g. <code>http://proxy:8080</code> or <code>socks5://proxy:1080</code>).
+                                Leave empty to connect directly without a proxy.
+                                <strong>A server restart is required after changing this setting.</strong>
+                            </div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="txtMoviePath">Movie Download Path</label>
+                            <input is="emby-input" type="text" id="txtMoviePath"
+                                   placeholder="/media/movies" />
+                            <div class="fieldDescription">
+                                Optional dedicated base directory for movie downloads across all sources.
+                                Leave empty to use the normal site/language download paths.
+                            </div>
+                        </div>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label>
+                                <input is="emby-checkbox" type="checkbox" id="chkLanguageFallback" />
+                                <span>Fall back to the other English track if unavailable</span>
+                            </label>
+                            <div class="fieldDescription checkboxFieldDescription">
+                                If the requested track (Sub or Dub) isn't available for an episode/provider, try the other one instead of failing outright.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AniWorld Settings -->
+                    <div class="verticalSection">
+                        <h3 class="sectionTitle">AniWorld (aniworld.to) — English Sub</h3>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label>
+                                <input is="emby-checkbox" type="checkbox" id="chkAniworldEnabled" />
+                                <span>Enable AniWorld</span>
+                            </label>
+                            <div class="fieldDescription checkboxFieldDescription">
+                                Enable searching and downloading anime from aniworld.to. English Sub only — aniworld.to does not offer an English dub track.
+                            </div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="txtAniworldPathSub">Download Path (English Sub)</label>
+                            <input is="emby-input" type="text" id="txtAniworldPathSub"
+                                   placeholder="/media/anime" />
+                            <div class="fieldDescription">
+                                Base directory for downloads. Files will be organized as:
+                                <code>Path/SeriesName/Season XX/SeriesName - SXXEXX.mkv</code>
+                            </div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="selAniworldProvider">Preferred Provider</label>
+                            <select is="emby-select" id="selAniworldProvider">
+                                <option value="VOE">VOE</option>
+                                <option value="Filemoon">Filemoon</option>
+                                <option value="Vidmoly">Vidmoly (recommended)</option>
+                                <option value="Vidoza">Vidoza</option>
+                            </select>
+                            <div class="fieldDescription">Default streaming provider for AniWorld. Vidmoly offers superior download speeds when available. VOE is a good fallback due to its wide availability.</div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="selAniworldFallback">Fallback Provider</label>
+                            <select is="emby-select" id="selAniworldFallback">
+                                <option value="">None (no fallback)</option>
+                                <option value="VOE">VOE</option>
+                                <option value="Filemoon">Filemoon</option>
+                                <option value="Vidmoly">Vidmoly</option>
+                                <option value="Vidoza">Vidoza</option>
+                            </select>
+                            <div class="fieldDescription">
+                                If all retries with the preferred provider fail, the download will be retried with this provider.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- s.to Settings -->
+                    <div class="verticalSection">
+                        <h3 class="sectionTitle">s.to (SerienStream) — English Dub</h3>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label>
+                                <input is="emby-checkbox" type="checkbox" id="chkStoEnabled" />
+                                <span>Enable s.to</span>
+                            </label>
+                            <div class="fieldDescription checkboxFieldDescription">
+                                Enable searching and downloading series from s.to. English Dub only — s.to does not offer an English sub track.
+                            </div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="txtStoBaseUrl">Custom Base URL</label>
+                            <input is="emby-input" type="text" id="txtStoBaseUrl"
+                                   placeholder="https://s.to" />
+                            <div class="fieldDescription">
+                                Override the s.to base URL. Use this if s.to does not resolve on your network.
+                                For example, set to <code>https://serienstream.to</code> as an alternative.
+                                Leave empty to use the default (https://s.to).
+                            </div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="txtStoPathDub">Download Path (English Dub)</label>
+                            <input is="emby-input" type="text" id="txtStoPathDub"
+                                   placeholder="/media/series" />
+                            <div class="fieldDescription">
+                                Base directory for downloads.
+                            </div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="selStoProvider">Preferred Provider</label>
+                            <select is="emby-select" id="selStoProvider">
+                                <option value="VOE">VOE (recommended)</option>
+                                <option value="Filemoon">Filemoon</option>
+                                <option value="Vidmoly">Vidmoly</option>
+                                <option value="Vidoza">Vidoza</option>
+                            </select>
+                            <div class="fieldDescription">Default streaming provider for s.to.</div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="selStoFallback">Fallback Provider</label>
+                            <select is="emby-select" id="selStoFallback">
+                                <option value="">None (no fallback)</option>
+                                <option value="VOE">VOE</option>
+                                <option value="Filemoon">Filemoon</option>
+                                <option value="Vidmoly">Vidmoly</option>
+                                <option value="Vidoza">Vidoza</option>
+                            </select>
+                            <div class="fieldDescription">
+                                If all retries with the preferred provider fail, the download will be retried with this provider.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Anikoto Settings -->
+                    <div class="verticalSection">
+                        <h3 class="sectionTitle">Anikoto (anikoto.net) — English Sub &amp; Dub</h3>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label>
+                                <input is="emby-checkbox" type="checkbox" id="chkAnikotoEnabled" />
+                                <span>Enable Anikoto</span>
+                            </label>
+                            <div class="fieldDescription checkboxFieldDescription">
+                                Enable searching and downloading anime from Anikoto. Offers both English Sub and English Dub.
+                                Built against a community-documented third-party API mirror (anikoto.net itself blocks automated access),
+                                so treat this integration as best-effort.
+                            </div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="txtAnikotoPathSub">Download Path (English Sub)</label>
+                            <input is="emby-input" type="text" id="txtAnikotoPathSub" placeholder="/media/anime" />
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="txtAnikotoPathDub">Download Path (English Dub)</label>
+                            <input is="emby-input" type="text" id="txtAnikotoPathDub" placeholder="/media/anime" />
+                            <div class="fieldDescription">Leave empty to use the English Sub path above.</div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="selAnikotoLanguage">Preferred Language</label>
+                            <select is="emby-select" id="selAnikotoLanguage">
+                                <option value="sub">English Sub</option>
+                                <option value="dub">English Dub</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Anime Nexus Settings -->
+                    <div class="verticalSection">
+                        <h3 class="sectionTitle">Anime Nexus (anime.nexus) — English Sub &amp; Dub — Experimental</h3>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label>
+                                <input is="emby-checkbox" type="checkbox" id="chkAnimenexusEnabled" />
+                                <span>Enable Anime Nexus</span>
+                            </label>
+                            <div class="fieldDescription checkboxFieldDescription">
+                                <strong>Disabled by default.</strong> anime.nexus has no publicly documented API and blocks automated
+                                research tools via robots.txt, so this integration is an unverified best-effort guess at the site's
+                                REST conventions. It may not work at all. Enable it only if you're willing to debug it — check the
+                                plugin logs for the actual HTTP responses if searches or episodes come back empty.
+                            </div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="txtAnimenexusPathSub">Download Path (English Sub)</label>
+                            <input is="emby-input" type="text" id="txtAnimenexusPathSub" placeholder="/media/anime" />
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="txtAnimenexusPathDub">Download Path (English Dub)</label>
+                            <input is="emby-input" type="text" id="txtAnimenexusPathDub" placeholder="/media/anime" />
+                            <div class="fieldDescription">Leave empty to use the English Sub path above.</div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="selAnimenexusLanguage">Preferred Language</label>
+                            <select is="emby-select" id="selAnimenexusLanguage">
+                                <option value="sub">English Sub</option>
+                                <option value="dub">English Dub</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <button is="emby-button" type="submit" class="raised button-submit block">
+                            <span>Save</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

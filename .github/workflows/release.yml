@@ -1,0 +1,104 @@
+name: Release Plugin
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Build
+        run: dotnet build Jellyfin.Plugin.AniBridge/Jellyfin.Plugin.AniBridge.csproj --configuration Release
+
+      - name: Package
+        run: |
+          mkdir -p release
+          cp Jellyfin.Plugin.AniBridge/bin/Release/net9.0/Jellyfin.Plugin.AniBridge.dll release/
+          cp Jellyfin.Plugin.AniBridge/meta.json release/
+          cd release && zip ../jellyfin-anibridge-downloader-${{ github.event.release.tag_name }}.zip *
+
+      - name: Compute checksum
+        id: checksum
+        run: echo "md5=$(md5sum jellyfin-anibridge-downloader-${{ github.event.release.tag_name }}.zip | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+
+      - name: Upload release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" "jellyfin-anibridge-downloader-${{ github.event.release.tag_name }}.zip" --clobber
+
+      - name: Update manifest
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+          CHECKSUM: ${{ steps.checksum.outputs.md5 }}
+          REPO: ${{ github.repository }}
+        run: |
+          export VERSION="${TAG#v}"
+          export TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          export SOURCE_URL="https://github.com/${REPO}/releases/download/${TAG}/jellyfin-anibridge-downloader-${TAG}.zip"
+          export TARGET_ABI=$(python3 -c "import json; print(json.load(open('Jellyfin.Plugin.AniBridge/meta.json'))['targetAbi'])")
+
+          python3 << 'PYEOF'
+          import json, os
+
+          version = os.environ["VERSION"]
+          checksum = os.environ["CHECKSUM"]
+          source_url = os.environ["SOURCE_URL"]
+          timestamp = os.environ["TIMESTAMP"]
+          target_abi = os.environ["TARGET_ABI"]
+
+          with open("Jellyfin.Plugin.AniBridge/meta.json", "r") as f:
+              meta = json.load(f)
+          full_changelog = meta.get("changelog", "")
+
+          # Extract only the current version's section from the cumulative changelog
+          import re
+          sections = re.split(r'\n(?=v\d+\.\d+\.\d+\.\d+)', full_changelog)
+          changelog = ""
+          for section in sections:
+              if section.startswith(f"v{version}"):
+                  changelog = section.strip()
+                  break
+
+          with open("manifest.json", "r") as f:
+              manifest = json.load(f)
+
+          new_version = {
+              "version": version,
+              "changelog": changelog,
+              "targetAbi": target_abi,
+              "sourceUrl": source_url,
+              "checksum": checksum,
+              "timestamp": timestamp,
+          }
+
+          manifest[0]["versions"] = [
+              v for v in manifest[0]["versions"]
+              if v["version"] != version
+          ]
+          manifest[0]["versions"].insert(0, new_version)
+
+          with open("manifest.json", "w") as f:
+              json.dump(manifest, f, indent=2)
+              f.write("\n")
+          PYEOF
+
+      - name: Commit manifest
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add manifest.json
+          git diff --cached --quiet || git commit -m "chore: update manifest for ${{ github.event.release.tag_name }}"
+          git push origin HEAD:main
