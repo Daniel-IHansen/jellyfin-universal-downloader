@@ -881,17 +881,6 @@ public class DownloadService
 
         startInfo.ArgumentList.Add("-i");
         startInfo.ArgumentList.Add(task.StreamUrl!);
-
-        // Some HLS master playlists (e.g. megaplay.buzz) expose each bitrate rendition as its
-        // own "program" rather than a single set of streams. ffmpeg's automatic stream selection
-        // then gets confused across programs and maps zero streams, failing with "Output file
-        // does not contain any stream" (exit 234). Mapping the first video/audio stream by
-        // absolute index sidesteps the per-program selection entirely and always grabs the
-        // first (highest-bitrate) rendition.
-        startInfo.ArgumentList.Add("-map");
-        startInfo.ArgumentList.Add("0:v:0");
-        startInfo.ArgumentList.Add("-map");
-        startInfo.ArgumentList.Add("0:a:0");
         startInfo.ArgumentList.Add("-c");
         startInfo.ArgumentList.Add("copy");
         startInfo.ArgumentList.Add("-bsf:a");

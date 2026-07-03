@@ -29,6 +29,16 @@ public class MegaplayExtractor : IStreamExtractor
         @" data-id=""(?<id>\d+)""",
         RegexOptions.Compiled);
 
+    // Matches each variant entry in an HLS *master* playlist: an EXT-X-STREAM-INF tag (with its
+    // BANDWIDTH attribute) followed by the media playlist URI on the next line.
+    private static readonly Regex VariantPattern = new(
+        @"#EXT-X-STREAM-INF:(?<attrs>[^\r\n]*)\r?\n(?<uri>[^\r\n]+)",
+        RegexOptions.Compiled);
+
+    private static readonly Regex BandwidthPattern = new(
+        @"BANDWIDTH=(?<bw>\d+)",
+        RegexOptions.Compiled);
+
     private readonly HttpClient _httpClient;
     private readonly ILogger<MegaplayExtractor> _logger;
 
@@ -89,7 +99,13 @@ public class MegaplayExtractor : IStreamExtractor
             {
                 var streamUrl = file.GetString();
                 _logger.LogDebug("Megaplay source extracted: {Found}", !string.IsNullOrEmpty(streamUrl));
-                return streamUrl;
+
+                if (string.IsNullOrEmpty(streamUrl))
+                {
+                    return streamUrl;
+                }
+
+                return await ResolveBestVariantAsync(streamUrl, cancellationToken).ConfigureAwait(false);
             }
 
             _logger.LogWarning("Megaplay getSources response had no sources.file: {Json}", json);
@@ -99,6 +115,57 @@ public class MegaplayExtractor : IStreamExtractor
         {
             _logger.LogError(ex, "Failed to extract Megaplay direct link from {Url}", embedUrl);
             return null;
+        }
+    }
+
+    /// <summary>
+    /// megaplay.buzz's "file" URL is an HLS *master* playlist listing multiple bitrate variants,
+    /// each of which ffmpeg treats as its own "program". Feeding the master playlist straight to
+    /// ffmpeg makes its automatic stream selection unreliable across those programs (seen as
+    /// "Output file does not contain any stream" / "Stream map matches no streams" failures).
+    /// Resolving to a single variant's own media playlist up front sidesteps that entirely — the
+    /// media playlist has just one program, so ffmpeg's default stream selection works normally.
+    /// </summary>
+    private async Task<string> ResolveBestVariantAsync(string masterPlaylistUrl, CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, masterPlaylistUrl);
+            request.Headers.Referrer = new Uri(StreamReferer);
+            var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
+            var playlist = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+
+            string? bestUri = null;
+            var bestBandwidth = -1L;
+
+            foreach (Match match in VariantPattern.Matches(playlist))
+            {
+                var bwMatch = BandwidthPattern.Match(match.Groups["attrs"].Value);
+                var bandwidth = bwMatch.Success && long.TryParse(bwMatch.Groups["bw"].Value, out var bw) ? bw : 0;
+
+                if (bandwidth > bestBandwidth)
+                {
+                    bestBandwidth = bandwidth;
+                    bestUri = match.Groups["uri"].Value.Trim();
+                }
+            }
+
+            if (string.IsNullOrEmpty(bestUri))
+            {
+                // Not a master playlist (no variants found) — already a single-program media
+                // playlist, safe to use as-is.
+                return masterPlaylistUrl;
+            }
+
+            var resolvedUri = new Uri(new Uri(masterPlaylistUrl), bestUri);
+            _logger.LogDebug("Megaplay resolved master playlist to variant (bandwidth {Bandwidth}): {Url}", bestBandwidth, resolvedUri);
+            return resolvedUri.ToString();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to resolve Megaplay master playlist variant, falling back to master URL: {Url}", masterPlaylistUrl);
+            return masterPlaylistUrl;
         }
     }
 }
