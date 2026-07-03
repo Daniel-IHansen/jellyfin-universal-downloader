@@ -870,6 +870,13 @@ public class DownloadService
         startInfo.ArgumentList.Add("-reconnect_delay_max");
         startInfo.ArgumentList.Add("5");
 
+        // Some providers' CDNs (e.g. megaplay.buzz's) disguise HLS segments with unrelated
+        // extensions (seen: ".jpg") to dodge naive content filters. ffmpeg's HLS demuxer
+        // rejects segment URLs whose extension isn't on its built-in safe list by default
+        // ("... is not in allowed_segment_extensions"), so it has to be told to allow any.
+        startInfo.ArgumentList.Add("-allowed_extensions");
+        startInfo.ArgumentList.Add("ALL");
+
         // Some providers' CDNs (e.g. megaplay.buzz) check Referer on the manifest/segment
         // requests themselves — ffmpeg sends none by default, so pass it explicitly when the
         // extractor that resolved this stream says it's required.

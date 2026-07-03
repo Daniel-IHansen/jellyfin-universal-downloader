@@ -6,10 +6,10 @@
     <Nullable>enable</Nullable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <RootNamespace>Jellyfin.Plugin.AniBridge</RootNamespace>
-    <AssemblyVersion>2.0.2.4</AssemblyVersion>
-    <FileVersion>2.0.2.4</FileVersion>
-    <Version>2.0.2.4</Version>
-    <InformationalVersion>2.0.2.4</InformationalVersion>
+    <AssemblyVersion>2.0.2.5</AssemblyVersion>
+    <FileVersion>2.0.2.5</FileVersion>
+    <Version>2.0.2.5</Version>
+    <InformationalVersion>2.0.2.5</InformationalVersion>
     <Authors>SiroxCW</Authors>
     <Company>SiroxCW</Company>
     <Product>AniBridge Downloader</Product>
