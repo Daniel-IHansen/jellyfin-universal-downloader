@@ -8,6 +8,14 @@
     "category": "General",
     "versions": [
       {
+        "version": "2.0.2.0",
+        "changelog": "v2.0.2.0\n- Fix: Anikoto episode titles were never populated (dropped during the v2.0.1.0 rewrite) — now filled from the API's per-episode title, falling back to \"Episode N\".\n- Fix: Megaplay downloads failing after all retries (\"ffmpeg exited with code N\") — megaplay.buzz's CDN checks Referer on the actual video/segment requests, which ffmpeg wasn't sending. Extractors can now declare a required Referer that gets passed to ffmpeg.\n- Improvement: ffmpeg failures now include the last few lines of ffmpeg's own stderr in the error message instead of just the bare exit code.",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://github.com/Daniel-IHansen/jellyfin-universal-downloader/releases/download/v2.0.2.0/jellyfin-anibridge-downloader-2.0.2.0.zip",
+        "checksum": "00000000000000000000000000000000",
+        "timestamp": "2026-07-03T00:00:00Z"
+      },
+      {
         "version": "2.0.1.0",
         "changelog": "v2.0.1.0\n- Fix: Anikoto \"Failed to load series\"/missing thumbnails \u2014 GetSeriesInfoAsync was calling a /api/anime/:slug endpoint that belongs to a different, unrelated community project and 404s on the actual deployed wrapper API. Series metadata (title/poster/genres) is now carried through from search/browse results instead of a second API call.\n- Fix: Anikoto search/browse/episode parsing corrected against live API responses (search results' \"slug\" field includes a \"/ep-N\" suffix that must be stripped; episodes' \"server_ids\" is a single opaque string, not an array).\n- Fix: Anikoto stream resolution \u2014 the API's /api/stream endpoint returns a megaplay.buzz embed page, not a direct video file. Added a MegaplayExtractor (decodes the real HLS URL from the embed page) instead of treating the response as a directly downloadable stream.\n- Change: Only Anikoto's \"HD-*\" server is offered as a download option for now \u2014 VidPlay/Vidstream/VidCloud resolve through other embed hosts this plugin doesn't have a verified extractor for yet.\n- Fix: Episode filenames/duplicate-detection for flat-episode-list sites (Anikoto) now use the real episode number instead of falling back to a slug+timestamp name and mis-detecting every episode as \"already downloaded\".",
         "targetAbi": "10.11.0.0",

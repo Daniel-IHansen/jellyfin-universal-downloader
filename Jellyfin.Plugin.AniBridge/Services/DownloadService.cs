@@ -551,6 +551,7 @@ public class DownloadService
             }
 
             streamUrl = await extractor.GetDirectLinkAsync(embedUrl, token).ConfigureAwait(false);
+            task.RequiredReferer = extractor.RequiredReferer;
         }
 
         if (string.IsNullOrEmpty(streamUrl))
@@ -869,6 +870,15 @@ public class DownloadService
         startInfo.ArgumentList.Add("-reconnect_delay_max");
         startInfo.ArgumentList.Add("5");
 
+        // Some providers' CDNs (e.g. megaplay.buzz) check Referer on the manifest/segment
+        // requests themselves — ffmpeg sends none by default, so pass it explicitly when the
+        // extractor that resolved this stream says it's required.
+        if (!string.IsNullOrEmpty(task.RequiredReferer))
+        {
+            startInfo.ArgumentList.Add("-headers");
+            startInfo.ArgumentList.Add($"Referer: {task.RequiredReferer}\r\n");
+        }
+
         startInfo.ArgumentList.Add("-i");
         startInfo.ArgumentList.Add(task.StreamUrl!);
         startInfo.ArgumentList.Add("-c");
@@ -896,12 +906,23 @@ public class DownloadService
         var sizePattern = new Regex(@"size=\s*(?<size>\d+)kB", RegexOptions.Compiled);
         TimeSpan? totalDuration = null;
 
+        // Keep the last few stderr lines so a failure can surface *why* ffmpeg failed (e.g. an
+        // HTTP 403 from the CDN) instead of just the bare exit code.
+        var recentLines = new Queue<string>();
+        const int MaxRecentLines = 8;
+
         var stderrTask = Task.Run(async () =>
         {
             while (!process.StandardError.EndOfStream)
             {
                 var line = await process.StandardError.ReadLineAsync(cancellationToken).ConfigureAwait(false);
                 if (line == null) continue;
+
+                recentLines.Enqueue(line);
+                while (recentLines.Count > MaxRecentLines)
+                {
+                    recentLines.Dequeue();
+                }
 
                 if (totalDuration == null)
                 {
@@ -946,7 +967,12 @@ public class DownloadService
 
         if (process.ExitCode != 0)
         {
-            throw new InvalidOperationException($"ffmpeg exited with code {process.ExitCode}");
+            var tail = string.Join(" | ", recentLines);
+            _logger.LogWarning("ffmpeg failed (exit {Code}) for {Url}. Last output: {Tail}", process.ExitCode, task.StreamUrl, tail);
+            throw new InvalidOperationException(
+                string.IsNullOrEmpty(tail)
+                    ? $"ffmpeg exited with code {process.ExitCode}"
+                    : $"ffmpeg exited with code {process.ExitCode}: {tail}");
         }
     }
 
@@ -997,6 +1023,10 @@ public class DownloadTask
 
     /// <summary>Gets or sets the stream URL.</summary>
     public string? StreamUrl { get; set; }
+
+    /// <summary>Gets or sets the Referer header ffmpeg must send when fetching <see cref="StreamUrl"/>, if the resolving extractor requires one.</summary>
+    [JsonIgnore]
+    public string? RequiredReferer { get; set; }
 
     /// <summary>Gets or sets the download status.</summary>
     public DownloadStatus Status { get; set; }

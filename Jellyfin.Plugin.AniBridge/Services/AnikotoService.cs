@@ -194,25 +194,35 @@ public class AnikotoService : StreamingSiteService
         }
 
         string? serverIds = null;
+        string? episodeTitle = null;
+        string? episodeNo = null;
         foreach (var item in episodesEl.EnumerateArray())
         {
             if (string.Equals(GetString(item, "id"), episodeId, StringComparison.OrdinalIgnoreCase))
             {
                 serverIds = GetString(item, "server_ids");
+                episodeTitle = GetString(item, "title");
+                episodeNo = GetString(item, "episode_no");
                 break;
             }
         }
 
+        // Anikoto rarely populates a per-episode title, so fall back to "Episode N" rather than
+        // leaving it blank in the UI.
+        var displayTitle = !string.IsNullOrWhiteSpace(episodeTitle)
+            ? episodeTitle
+            : (episodeNo != null ? $"Episode {episodeNo}" : null);
+
         if (string.IsNullOrEmpty(serverIds))
         {
-            return new EpisodeDetails { Url = episodeUrl, ProvidersByLanguage = providers };
+            return new EpisodeDetails { Url = episodeUrl, TitleEn = displayTitle, ProvidersByLanguage = providers };
         }
 
         using var serversDoc = await FetchJsonAsync($"{ApiBaseUrl}/servers?ids={Uri.EscapeDataString(serverIds)}", cancellationToken).ConfigureAwait(false);
 
         if (!serversDoc.RootElement.TryGetProperty("results", out var servers) || servers.ValueKind != JsonValueKind.Array)
         {
-            return new EpisodeDetails { Url = episodeUrl, ProvidersByLanguage = providers };
+            return new EpisodeDetails { Url = episodeUrl, TitleEn = displayTitle, ProvidersByLanguage = providers };
         }
 
         foreach (var server in servers.EnumerateArray())
@@ -250,6 +260,7 @@ public class AnikotoService : StreamingSiteService
         return new EpisodeDetails
         {
             Url = episodeUrl,
+            TitleEn = displayTitle,
             ProvidersByLanguage = providers,
         };
     }

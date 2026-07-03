@@ -19,6 +19,12 @@ public class MegaplayExtractor : IStreamExtractor
 {
     private const string RefererOrigin = "https://anikoto.net/";
 
+    // The CDN serving the actual HLS manifest/segments validates Referer against megaplay.buzz's
+    // own origin (the page hosting the player), not the site that embedded it — this is what
+    // ffmpeg needs to send when it fetches the stream, separate from RefererOrigin above (used
+    // only when this extractor itself fetches the embed page).
+    private const string StreamReferer = "https://megaplay.buzz/";
+
     private static readonly Regex DataIdPattern = new(
         @" data-id=""(?<id>\d+)""",
         RegexOptions.Compiled);
@@ -39,6 +45,13 @@ public class MegaplayExtractor : IStreamExtractor
 
     /// <inheritdoc />
     public string ProviderName => "Megaplay";
+
+    /// <summary>
+    /// megaplay.buzz's CDN checks Referer on the HLS manifest/segment requests themselves, not
+    /// just the API calls made while resolving them — ffmpeg needs this passed explicitly since
+    /// it otherwise sends no Referer at all, which the CDN rejects.
+    /// </summary>
+    public string? RequiredReferer => StreamReferer;
 
     /// <inheritdoc />
     public async Task<string?> GetDirectLinkAsync(string embedUrl, CancellationToken cancellationToken = default)
