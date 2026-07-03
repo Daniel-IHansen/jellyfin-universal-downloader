@@ -8,6 +8,14 @@
     "category": "General",
     "versions": [
       {
+        "version": "2.1.0.0",
+        "changelog": "v2.1.0.0\n- Feature: Added AniWatch (aniwatch.one) support, English Sub and Dub, scraped directly from the site's own server-rendered HTML (no anti-bot layer found, verified live including shows with 500+ episodes). Of the three provider servers it offers per episode, only the DoodStream-backed one has a working extractor so far (MegaCloud/rabbitstream and a custom SPA player are not yet surfaced \u2014 no extractor decodes them).\n- Feature: Added a DoodStreamExtractor, decoding DoodStream-family embeds (pass_md5 + token flow) into a direct playable MP4 URL.\n- Change: IStreamExtractor gained an IsProgressiveStream flag so a provider can serve a direct progressive file (skipping the HLS-segment-prefetch workaround and the TS-only aac_adtstoasc bitstream filter, and instead passing its Referer to ffmpeg directly via -headers).",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://github.com/Daniel-IHansen/jellyfin-universal-downloader/releases/download/v2.1.0.0/jellyfin-anibridge-downloader-v2.1.0.0.zip",
+        "checksum": "bf960a986329d06e99b040a64c10a8b7",
+        "timestamp": "2026-07-03T17:34:10Z"
+      },
+      {
         "version": "2.0.4.0",
         "changelog": "v2.0.4.0\n- Feature: English Sub downloads via Megaplay now include subtitles \u2014 megaplay.buzz's getSources response was found to carry a separate \"tracks\" array with a WebVTT subtitle file that nothing previously read. MegaplayExtractor now captures it, and DownloadService downloads it and muxes it into the output MKV as a proper subtitle track (marked default, language=eng), instead of the file having no subtitles at all.",
         "targetAbi": "10.11.0.0",
