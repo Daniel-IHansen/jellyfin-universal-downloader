@@ -871,10 +871,15 @@ public class DownloadService
         startInfo.ArgumentList.Add("5");
 
         // Some providers' CDNs (e.g. megaplay.buzz's) disguise HLS segments with unrelated
-        // extensions (seen: ".jpg") to dodge naive content filters. ffmpeg's HLS demuxer
-        // rejects segment URLs whose extension isn't on its built-in safe list by default
-        // ("... is not in allowed_segment_extensions"), so it has to be told to allow any.
+        // extensions (seen: ".jpg") to dodge naive content filters. Upstream ffmpeg's HLS
+        // demuxer rejects segment URLs whose extension isn't on its built-in safe list via
+        // "-allowed_extensions", but Jellyfin's own ffmpeg fork additionally bolts on a
+        // *separate* segment-level check (error text: "is not in allowed_segment_extensions") —
+        // a hardening patch from a past Jellyfin security advisory about malicious HLS
+        // playlists referencing arbitrary local files. Both need to be set to ALL.
         startInfo.ArgumentList.Add("-allowed_extensions");
+        startInfo.ArgumentList.Add("ALL");
+        startInfo.ArgumentList.Add("-allowed_segment_extensions");
         startInfo.ArgumentList.Add("ALL");
 
         // Some providers' CDNs (e.g. megaplay.buzz) check Referer on the manifest/segment
