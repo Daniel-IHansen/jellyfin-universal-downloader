@@ -93,6 +93,11 @@ public class MegaplayExtractor : IStreamExtractor
             sourcesResponse.EnsureSuccessStatusCode();
             var json = await sourcesResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
 
+            // Logged at Information level (not Debug) so it shows up with Jellyfin's default log
+            // level — temporary diagnostic to confirm whether this endpoint's response includes a
+            // "tracks" array (subtitle files), which nothing in this extractor currently reads.
+            _logger.LogInformation("Megaplay getSources raw response: {Json}", json);
+
             using var doc = JsonDocument.Parse(json);
             if (doc.RootElement.TryGetProperty("sources", out var sources) &&
                 sources.TryGetProperty("file", out var file))
