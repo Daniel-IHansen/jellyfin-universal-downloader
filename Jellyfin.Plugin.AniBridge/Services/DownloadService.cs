@@ -124,7 +124,7 @@ public class DownloadService
             return service;
         }
 
-        return _services.TryGetValue("aniworld", out var defaultService)
+        return _services.TryGetValue("anikoto", out var defaultService)
             ? defaultService
             : _services.Values.First();
     }
@@ -164,7 +164,7 @@ public class DownloadService
         string provider,
         string outputPath,
         string seriesTitle,
-        string source = "aniworld",
+        string source = "anikoto",
         CancellationToken cancellationToken = default,
         string? username = null,
         bool priority = false)
@@ -646,22 +646,7 @@ public class DownloadService
                 return null;
             }
 
-            var providerPriority = new[] { "VOE", "Filemoon", "Vidmoly", "Vidoza" };
             var extractorNames = _extractors.Select(e => e.ProviderName).ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-            foreach (var prov in providerPriority)
-            {
-                if (prov.Equals(excludeProvider, StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-
-                if (providers.TryGetValue(prov, out var url) &&
-                    extractorNames.Contains(prov))
-                {
-                    return (prov, url, lang);
-                }
-            }
 
             foreach (var (name, url) in providers)
             {
@@ -1064,8 +1049,8 @@ public class DownloadTask
     /// <summary>Gets or sets the file size in bytes.</summary>
     public long FileSizeBytes { get; set; }
 
-    /// <summary>Gets or sets the source site ("aniworld" or "sto").</summary>
-    public string Source { get; set; } = "aniworld";
+    /// <summary>Gets or sets the source site ("anikoto" or "animenexus").</summary>
+    public string Source { get; set; } = "anikoto";
 
     /// <summary>Gets or sets the username of the user who queued the download.</summary>
     public string? Username { get; set; }

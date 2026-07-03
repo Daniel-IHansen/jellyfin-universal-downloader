@@ -78,23 +78,27 @@ public class PluginConfiguration : BasePluginConfiguration
     {
         new SiteConfigEntry
         {
-            Source = "aniworld",
-            Config = new SiteDownloaderConfig { Enabled = true, PreferredProvider = "Vidmoly", FallbackProvider = "VOE" },
-        },
-        new SiteConfigEntry
-        {
-            Source = "sto",
-            Config = new SiteDownloaderConfig { Enabled = true, PreferredProvider = "VOE" },
-        },
-        new SiteConfigEntry
-        {
             Source = "anikoto",
-            Config = new SiteDownloaderConfig { Enabled = true, PreferredProvider = "Megaplay" },
+            Config = new SiteDownloaderConfig
+            {
+                Enabled = true,
+                PreferredProvider = "Megaplay",
+                DownloadPath = "/Media/Anime",
+                DownloadPathSub = "/Media/Anime/sub",
+                DownloadPathDub = "/Media/Anime/dub",
+            },
         },
         new SiteConfigEntry
         {
             Source = "animenexus",
-            Config = new SiteDownloaderConfig { Enabled = false, PreferredProvider = "AnimeNexus" },
+            Config = new SiteDownloaderConfig
+            {
+                Enabled = false,
+                PreferredProvider = "AnimeNexus",
+                DownloadPath = "/Media/Anime",
+                DownloadPathSub = "/Media/Anime/sub",
+                DownloadPathDub = "/Media/Anime/dub",
+            },
         },
     };
 

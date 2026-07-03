@@ -2,8 +2,8 @@
   {
     "guid": "7c1a9e3d-5b2f-4a68-9d3e-2f6b8c4a1e70",
     "name": "AniBridge Downloader",
-    "overview": "Download anime and series from multiple streaming sites directly within Jellyfin (English Sub/Dub only)",
-    "description": "Search, browse, and download anime and series from multiple streaming sites (AniWorld, s.to, Anikoto, Anime Nexus) directly within Jellyfin. English Sub/Dub only \u2014 no German. Adding a new site is a single pluggable adapter class.",
+    "overview": "Download anime from multiple streaming sites directly within Jellyfin (English Sub/Dub only)",
+    "description": "Search, browse, and download anime from multiple streaming sites (Anikoto, Anime Nexus) directly within Jellyfin. English Sub/Dub only. Adding a new site is a single pluggable adapter class.",
     "owner": "Daniel-IHansen",
     "category": "General",
     "versions": [

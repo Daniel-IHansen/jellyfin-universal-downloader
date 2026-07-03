@@ -37,13 +37,13 @@ public abstract class StreamingSiteService
     /// <summary>Logger instance for derived classes.</summary>
     protected ILogger Logger { get; }
 
-    /// <summary>Gets the source identifier (e.g. "aniworld", "sto", "anikoto", "animenexus").</summary>
+    /// <summary>Gets the source identifier (e.g. "anikoto", "animenexus").</summary>
     public abstract string SourceName { get; }
 
-    /// <summary>Gets the human-readable display name shown in the UI (e.g. "AniWorld", "s.to").</summary>
+    /// <summary>Gets the human-readable display name shown in the UI (e.g. "Anikoto").</summary>
     public abstract string DisplayName { get; }
 
-    /// <summary>Gets the base URL of the site (e.g. "https://aniworld.to").</summary>
+    /// <summary>Gets the base URL of the site (e.g. "https://anikoto.net").</summary>
     public abstract string BaseUrl { get; }
 
     /// <summary>Gets the user agent string used for outbound requests.</summary>
@@ -59,9 +59,9 @@ public abstract class StreamingSiteService
     /// <summary>
     /// Gets whether <see cref="ResolveRedirectAsync"/> already returns a final, directly
     /// downloadable stream URL (HLS/MP4) for this site, so no <see cref="Jellyfin.Plugin.AniBridge.Extractors.IStreamExtractor"/>
-    /// lookup by provider name is needed. HTML-embed sites like AniWorld/s.to need an extractor
-    /// to decode the provider's embed page (Voe/Filemoon/...); API-driven sites like Anikoto
-    /// typically already hand back a playable URL and should set this to <c>true</c>.
+    /// lookup by provider name is needed. A hypothetical HTML-embed site would need an extractor
+    /// to decode the provider's embed page; API-driven sites like Anikoto typically already hand
+    /// back a playable URL and should set this to <c>true</c>.
     /// </summary>
     public virtual bool ResolvesDirectStreamUrls => false;
 
@@ -251,7 +251,7 @@ public class SearchResult
     public string Description { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the source site identifier.</summary>
-    public string Source { get; set; } = "aniworld";
+    public string Source { get; set; } = "anikoto";
 }
 
 /// <summary>
@@ -326,7 +326,7 @@ public class BrowseItem
     public string Genre { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the source site identifier.</summary>
-    public string Source { get; set; } = "aniworld";
+    public string Source { get; set; } = "anikoto";
 }
 
 /// <summary>

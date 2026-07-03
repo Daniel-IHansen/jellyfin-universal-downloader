@@ -12,14 +12,12 @@ Series View| Search View
 
 - **Search and browse** anime and series with cover art, popular titles, and new releases
 - **Download** individual episodes, full seasons, or entire series
-- **Four sites supported**, each a self-contained adapter — adding another site is a single new class, no controller/config changes needed:
+- **Two sites supported**, each a self-contained adapter — adding another site is a single new class, no controller/config changes needed:
   | Site | Content | Languages | Status |
   |------|---------|-----------|--------|
-  | [aniworld.to](https://aniworld.to) | Anime | English Sub | Stable |
-  | [s.to](https://s.to) | Series | English Dub | Stable |
   | [anikoto.net](https://anikoto.net) | Anime | English Sub + Dub | Best-effort (built against a community-documented third-party API — anikoto.net itself blocks automated access) |
   | [anime.nexus](https://anime.nexus) | Anime | English Sub + Dub | **Experimental, disabled by default** — no public API exists and the site blocks automated research tools, so this integration is an unverified guess at its REST conventions |
-- **Multiple providers**: VOE, Filemoon, Vidoza and Vidmoly (for AniWorld/s.to); Anikoto/Anime Nexus resolve directly to a playable stream URL via their own APIs
+- Both sites resolve directly to a playable stream URL via their own APIs (Anikoto's Megaplay-backed server needs a dedicated extractor to decode its embed page)
 - **Download manager** with real-time progress, cancel, retry, and batch operations
 - **Automatic retries** with exponential backoff, provider fallback, and optional Sub↔Dub language fallback
 - **Auto library scan** so new episodes appear in Jellyfin immediately
@@ -105,11 +103,8 @@ Each site can be enabled or disabled independently and has its own settings. If 
 | Setting | Description |
 |---------|-------------|
 | Enabled | Toggle this site on or off |
-| Download Path (Sub / Dub) | Where to save files for that track (should point to a Jellyfin library folder) |
+| Download Path (Sub / Dub) | Where to save files for that track (should point to a Jellyfin library folder). Defaults to `/Media/Anime/sub` and `/Media/Anime/dub`. |
 | Preferred Language | Default track for downloads from that site |
-| Preferred Provider | Default streaming provider (AniWorld/s.to only) |
-| Fallback Provider | Backup provider if the primary one fails after all retries (AniWorld/s.to only) |
-| Custom Base URL | Alternate mirror domain (s.to only, e.g. `serienstream.to`) |
 
 ## Non-admin access
 
@@ -137,54 +132,17 @@ Non-admin users will see an **AniBridge Downloader** entry in the sidebar that o
 
 ## How It Works
 
-The plugin's site-adapter architecture (`StreamingSiteService`) supports two integration styles:
+The plugin's site-adapter architecture (`StreamingSiteService`) is API-driven:
 
-### HTML-scraped sites (aniworld.to / s.to)
-
-1. Searches use each site's AJAX search endpoint
-2. Series, season, and episode pages are scraped to find provider links
-3. Provider redirect URLs are resolved to embed pages
-4. Each provider has a dedicated extractor that pulls out the direct stream URL
-5. ffmpeg downloads the stream and saves it as MKV
-
-### API-driven sites (Anikoto / Anime Nexus)
-
-1. Search, series, and episode data come from a JSON REST API instead of HTML scraping
-2. The API resolves directly to a playable stream URL — no separate embed-page extractor is needed
+1. Search, series, and episode data come from a JSON REST API
+2. The API resolves directly to a playable stream URL, or (Anikoto's Megaplay-backed server) to an embed page that a dedicated extractor decodes into the real HLS URL
 3. ffmpeg downloads the stream and saves it as MKV
 
 ### Adding a new site
 
-Implement `StreamingSiteService` (for API-driven sites) or `HtmlScrapingSiteService` (for scraped HTML sites), declare which of its native language identifiers map to the plugin's canonical `"sub"`/`"dub"` keys, and register it in `PluginServiceRegistrator`. The controller, config UI, and download pipeline pick it up automatically.
-
-### Supported providers (AniWorld / s.to)
-
-| Provider | Method |
-|----------|--------|
-| **VOE** | Decodes obfuscated JSON (ROT13, base64, char shift) to extract HLS URLs |
-| **Filemoon** | Handles both modern Byse API (AES-256-GCM) and legacy packed JS |
-| **Vidmoly** | Extracts HLS URLs from JavaScript sources |
-| **Vidoza** | Extracts MP4 URLs from source tags |
+Implement `StreamingSiteService`, declare which of its native language identifiers map to the plugin's canonical `"sub"`/`"dub"` keys, and register it in `PluginServiceRegistrator`. The controller, config UI, and download pipeline pick it up automatically. A site that only exposes HTML (no JSON API) can still work the same way — just scrape/parse HTML inside that adapter's own methods instead of calling a REST endpoint.
 
 ## Known Issues
-
-### s.to downloads fail with "No JSON script blocks found in VOE page"
-
-s.to has put their provider redirector (`/r?t=...`) behind a Cloudflare Turnstile gate that activates **per-IP** for "flagged" egress addresses. Many datacenter ranges (Hetzner, OVH, etc.) get the gate; most residential IPs don't. From a flagged IP, every download retry produces logs like:
-
-```
-Resolved to embed URL: "https://s.to/r?t=..."
-No JSON script blocks found in VOE page
-Failed to extract VOE source from page
-```
-
-Because the gate requires a real browser to solve an interactive Turnstile widget, the plugin can't bypass it on its own. Your options:
-
-1. **Route the plugin through a clean proxy.** Set **Proxy Server** in plugin settings to a SOCKS5 or HTTP proxy on a residential / unflagged IP (e.g. `socks5://user:pass@proxy:1080`). Restart Jellyfin. This is the recommended fix.
-2. **Use a VPN on the Jellyfin host** so all outbound traffic exits a clean IP.
-3. **aniworld.to is currently unaffected** — if you only need anime, downloads still work normally on flagged IPs.
-
-To check whether your server's IP is flagged, the repo includes [`scripts/check-sto-flag.sh`](scripts/check-sto-flag.sh): copy it to the server and run it.
 
 ### Anikoto / Anime Nexus may not work out of the box
 

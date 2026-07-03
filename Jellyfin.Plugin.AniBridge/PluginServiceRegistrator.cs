@@ -19,10 +19,6 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
     /// <inheritdoc />
     public void RegisterServices(IServiceCollection serviceCollection, IServerApplicationHost applicationHost)
     {
-        serviceCollection.AddHttpClient("AniWorld", c => c.Timeout = TimeSpan.FromSeconds(HttpClientTimeoutSeconds))
-            .ConfigurePrimaryHttpMessageHandler(ConfigureHandler);
-        serviceCollection.AddHttpClient("STO", c => c.Timeout = TimeSpan.FromSeconds(HttpClientTimeoutSeconds))
-            .ConfigurePrimaryHttpMessageHandler(ConfigureHandler);
         serviceCollection.AddHttpClient("Anikoto", c => c.Timeout = TimeSpan.FromSeconds(HttpClientTimeoutSeconds))
             .ConfigurePrimaryHttpMessageHandler(ConfigureHandler);
         serviceCollection.AddHttpClient("AnimeNexus", c => c.Timeout = TimeSpan.FromSeconds(HttpClientTimeoutSeconds))
@@ -33,17 +29,11 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         // service can resolve the full set via IEnumerable<StreamingSiteService> without
         // knowing about any specific site). Adding a new site adapter later only requires two
         // lines here — no controller/config changes needed.
-        AddSite<AniWorldService>(serviceCollection);
-        AddSite<StoService>(serviceCollection);
         AddSite<AnikotoService>(serviceCollection);
         AddSite<AnimeNexusService>(serviceCollection);
 
         serviceCollection.AddSingleton<DownloadHistoryService>();
         serviceCollection.AddSingleton<DownloadService>();
-        serviceCollection.AddSingleton<IStreamExtractor, VoeExtractor>();
-        serviceCollection.AddSingleton<IStreamExtractor, VidozaExtractor>();
-        serviceCollection.AddSingleton<IStreamExtractor, VidmolyExtractor>();
-        serviceCollection.AddSingleton<IStreamExtractor, FilemoonExtractor>();
         serviceCollection.AddSingleton<IStreamExtractor, MegaplayExtractor>();
     }
 

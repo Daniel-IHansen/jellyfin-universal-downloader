@@ -30,21 +30,6 @@ export default function (view, params) {
             view.querySelector('#txtMoviePath').value = config.MovieDownloadPath || '';
             view.querySelector('#chkLanguageFallback').checked = config.EnableLanguageFallback !== false;
 
-            // AniWorld (English Sub only)
-            var aw = getSiteConfig(config, 'aniworld');
-            view.querySelector('#chkAniworldEnabled').checked = aw.Enabled !== false;
-            view.querySelector('#txtAniworldPathSub').value = aw.DownloadPathSub || aw.DownloadPath || '';
-            view.querySelector('#selAniworldProvider').value = aw.PreferredProvider || 'Vidmoly';
-            view.querySelector('#selAniworldFallback').value = aw.FallbackProvider || '';
-
-            // s.to (English Dub only)
-            var sto = getSiteConfig(config, 'sto');
-            view.querySelector('#chkStoEnabled').checked = sto.Enabled === true;
-            view.querySelector('#txtStoBaseUrl').value = sto.CustomBaseUrl || '';
-            view.querySelector('#txtStoPathDub').value = sto.DownloadPathDub || sto.DownloadPath || '';
-            view.querySelector('#selStoProvider').value = sto.PreferredProvider || 'VOE';
-            view.querySelector('#selStoFallback').value = sto.FallbackProvider || '';
-
             // Anikoto (Sub + Dub)
             var anikoto = getSiteConfig(config, 'anikoto');
             view.querySelector('#chkAnikotoEnabled').checked = anikoto.Enabled !== false;
@@ -76,25 +61,6 @@ export default function (view, params) {
             config.ProxyUrl = view.querySelector('#txtProxyUrl').value.trim();
             config.MovieDownloadPath = view.querySelector('#txtMoviePath').value.trim();
             config.EnableLanguageFallback = view.querySelector('#chkLanguageFallback').checked;
-
-            // AniWorld
-            var aw = getSiteConfig(config, 'aniworld');
-            aw.Enabled = view.querySelector('#chkAniworldEnabled').checked;
-            aw.DownloadPathSub = view.querySelector('#txtAniworldPathSub').value.trim();
-            aw.DownloadPath = aw.DownloadPathSub;
-            aw.PreferredLanguage = 'sub';
-            aw.PreferredProvider = view.querySelector('#selAniworldProvider').value;
-            aw.FallbackProvider = view.querySelector('#selAniworldFallback').value;
-
-            // s.to
-            var sto = getSiteConfig(config, 'sto');
-            sto.Enabled = view.querySelector('#chkStoEnabled').checked;
-            sto.CustomBaseUrl = view.querySelector('#txtStoBaseUrl').value.trim();
-            sto.DownloadPathDub = view.querySelector('#txtStoPathDub').value.trim();
-            sto.DownloadPath = sto.DownloadPathDub;
-            sto.PreferredLanguage = 'dub';
-            sto.PreferredProvider = view.querySelector('#selStoProvider').value;
-            sto.FallbackProvider = view.querySelector('#selStoFallback').value;
 
             // Anikoto
             var anikoto = getSiteConfig(config, 'anikoto');

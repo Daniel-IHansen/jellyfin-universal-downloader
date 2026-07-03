@@ -18,7 +18,7 @@ namespace Jellyfin.Plugin.AniBridge;
 
 /// <summary>
 /// AniBridge Downloader plugin for Jellyfin.
-/// Downloads anime and series from multiple streaming sites (AniWorld, s.to, Anikoto, Anime Nexus)
+/// Downloads anime from multiple streaming sites (Anikoto, Anime Nexus)
 /// directly within Jellyfin's UI. English Sub/Dub only.
 /// </summary>
 public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
@@ -90,7 +90,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     public override string Name => PluginDisplayName;
 
     /// <inheritdoc />
-    public override string Description => "Search and download anime and series from multiple streaming sites (AniWorld, s.to, Anikoto, Anime Nexus) directly within Jellyfin. English Sub/Dub only.";
+    public override string Description => "Search and download anime from multiple streaming sites (Anikoto, Anime Nexus) directly within Jellyfin. English Sub/Dub only.";
 
     /// <inheritdoc />
     public override Guid Id => Guid.Parse(PluginGuid);

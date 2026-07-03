@@ -140,7 +140,7 @@ public class DownloadHistoryService : IDisposable
                 cmd.Parameters.AddWithValue("@completed", task.CompletedAt.HasValue
                     ? (object)task.CompletedAt.Value.ToString("o")
                     : DBNull.Value);
-                cmd.Parameters.AddWithValue("@source", task.Source ?? "aniworld");
+                cmd.Parameters.AddWithValue("@source", task.Source ?? "anikoto");
                 cmd.ExecuteNonQuery();
             }
             catch (Exception ex)
@@ -188,7 +188,7 @@ public class DownloadHistoryService : IDisposable
                 cmd.Parameters.AddWithValue("@completed", task.CompletedAt.HasValue
                     ? (object)task.CompletedAt.Value.ToString("o")
                     : DBNull.Value);
-                cmd.Parameters.AddWithValue("@source", task.Source ?? "aniworld");
+                cmd.Parameters.AddWithValue("@source", task.Source ?? "anikoto");
                 cmd.ExecuteNonQuery();
             }
             catch (Exception ex)
@@ -367,7 +367,7 @@ public class DownloadHistoryService : IDisposable
                         RetryCount = reader.GetInt32(13),
                         StartedAt = reader.GetString(14),
                         CompletedAt = reader.IsDBNull(15) ? null : reader.GetString(15),
-                        Source = reader.IsDBNull(16) ? "aniworld" : reader.GetString(16),
+                        Source = reader.IsDBNull(16) ? "anikoto" : reader.GetString(16),
                     });
                 }
             }
@@ -544,7 +544,7 @@ public class DownloadHistoryService : IDisposable
                         RetryCount = reader.GetInt32(13),
                         StartedAt = reader.GetString(14),
                         CompletedAt = reader.IsDBNull(15) ? null : reader.GetString(15),
-                        Source = reader.IsDBNull(16) ? "aniworld" : reader.GetString(16),
+                        Source = reader.IsDBNull(16) ? "anikoto" : reader.GetString(16),
                     });
                 }
             }
@@ -766,8 +766,8 @@ public class DownloadHistoryRecord
     /// <summary>Gets or sets the completed timestamp.</summary>
     public string? CompletedAt { get; set; }
 
-    /// <summary>Gets or sets the source site ("aniworld" or "sto").</summary>
-    public string Source { get; set; } = "aniworld";
+    /// <summary>Gets or sets the source site ("anikoto" or "animenexus").</summary>
+    public string Source { get; set; } = "anikoto";
 }
 
 /// <summary>

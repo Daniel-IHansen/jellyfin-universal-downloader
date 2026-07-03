@@ -64,7 +64,7 @@ public class DownloaderController : ControllerBase
             return service;
         }
 
-        return _services.TryGetValue("aniworld", out var defaultService)
+        return _services.TryGetValue("anikoto", out var defaultService)
             ? defaultService
             : _services.Values.First();
     }
@@ -84,7 +84,7 @@ public class DownloaderController : ControllerBase
             return UrlValidator.DetectSource(url, _services.Values);
         }
 
-        return "aniworld";
+        return "anikoto";
     }
 
     private bool IsValidUrl(string url) => UrlValidator.IsValidUrl(url, _services.Values);
@@ -171,7 +171,7 @@ public class DownloaderController : ControllerBase
 
     /// <summary>
     /// Search for series. Use source=all (or omit) to query every enabled site, or a specific
-    /// source name (e.g. source=aniworld) for one site.
+    /// source name (e.g. source=anikoto) for one site.
     /// </summary>
     [HttpGet("Search")]
     [ProducesResponseType(StatusCodes.Status200OK)]
