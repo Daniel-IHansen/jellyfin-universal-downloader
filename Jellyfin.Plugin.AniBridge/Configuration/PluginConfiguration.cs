@@ -89,7 +89,7 @@ public class PluginConfiguration : BasePluginConfiguration
         new SiteConfigEntry
         {
             Source = "anikoto",
-            Config = new SiteDownloaderConfig { Enabled = true, PreferredProvider = "Anikoto" },
+            Config = new SiteDownloaderConfig { Enabled = true, PreferredProvider = "Megaplay" },
         },
         new SiteConfigEntry
         {

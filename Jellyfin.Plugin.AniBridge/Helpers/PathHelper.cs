@@ -26,6 +26,15 @@ public static class PathHelper
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     /// <summary>
+    /// Regex to extract the episode number from a flat-episode-list site's URL (Anikoto,
+    /// Anime Nexus) — these sites have no season concept, so a "?n=" query parameter carries
+    /// the human episode number and everything is treated as Season 1.
+    /// </summary>
+    public static readonly Regex FlatEpisodeNumberFromUrl = new(
+        @"[?&]n=(?<episode>\d+)",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    /// <summary>
     /// Regex to extract the series slug from a URL.
     /// Supports /anime/stream/{slug} (aniworld) and /serie/{slug} (s.to).
     /// </summary>
@@ -77,6 +86,12 @@ public static class PathHelper
             return (0, int.Parse(movieMatch.Groups["num"].Value));
         }
 
+        var flatMatch = FlatEpisodeNumberFromUrl.Match(url);
+        if (flatMatch.Success)
+        {
+            return (1, int.Parse(flatMatch.Groups["episode"].Value));
+        }
+
         return (0, 0);
     }
 
@@ -106,6 +121,15 @@ public static class PathHelper
             var fileName = $"{safeName} - S00E{num:D2}.mkv";
 
             return Path.Combine(basePath, safeName, "Specials", fileName);
+        }
+
+        var flatMatch = FlatEpisodeNumberFromUrl.Match(episodeUrl);
+        if (flatMatch.Success)
+        {
+            var episode = int.Parse(flatMatch.Groups["episode"].Value);
+            var fileName = $"{safeName} - S01E{episode:D2}.mkv";
+
+            return Path.Combine(basePath, safeName, "Season 01", fileName);
         }
 
         // Fallback: use slug + timestamp

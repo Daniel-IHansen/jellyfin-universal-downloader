@@ -103,7 +103,7 @@ export default function (view, params) {
             anikoto.DownloadPathDub = view.querySelector('#txtAnikotoPathDub').value.trim();
             anikoto.DownloadPath = anikoto.DownloadPathSub;
             anikoto.PreferredLanguage = view.querySelector('#selAnikotoLanguage').value;
-            anikoto.PreferredProvider = 'Anikoto';
+            anikoto.PreferredProvider = 'Megaplay';
 
             // Anime Nexus
             var animenexus = getSiteConfig(config, 'animenexus');

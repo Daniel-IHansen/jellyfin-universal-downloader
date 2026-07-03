@@ -44,6 +44,7 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         serviceCollection.AddSingleton<IStreamExtractor, VidozaExtractor>();
         serviceCollection.AddSingleton<IStreamExtractor, VidmolyExtractor>();
         serviceCollection.AddSingleton<IStreamExtractor, FilemoonExtractor>();
+        serviceCollection.AddSingleton<IStreamExtractor, MegaplayExtractor>();
     }
 
     private static void AddSite<TService>(IServiceCollection serviceCollection)
