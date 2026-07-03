@@ -8,8 +8,16 @@
     "category": "General",
     "versions": [
       {
+        "version": "2.0.2.2",
+        "changelog": "",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://github.com/Daniel-IHansen/jellyfin-universal-downloader/releases/download/v2.0.2.2/jellyfin-anibridge-downloader-v2.0.2.2.zip",
+        "checksum": "7146b7c9c4aac10a421f174dae4055dd",
+        "timestamp": "2026-07-03T10:46:13Z"
+      },
+      {
         "version": "2.0.2.0",
-        "changelog": "v2.0.2.0\n- Fix: Anikoto episode titles were never populated (dropped during the v2.0.1.0 rewrite) — now filled from the API's per-episode title, falling back to \"Episode N\".\n- Fix: Megaplay downloads failing after all retries (\"ffmpeg exited with code N\") — megaplay.buzz's CDN checks Referer on the actual video/segment requests, which ffmpeg wasn't sending. Extractors can now declare a required Referer that gets passed to ffmpeg.\n- Improvement: ffmpeg failures now include the last few lines of ffmpeg's own stderr in the error message instead of just the bare exit code.",
+        "changelog": "v2.0.2.0\n- Fix: Anikoto episode titles were never populated (dropped during the v2.0.1.0 rewrite) \u2014 now filled from the API's per-episode title, falling back to \"Episode N\".\n- Fix: Megaplay downloads failing after all retries (\"ffmpeg exited with code N\") \u2014 megaplay.buzz's CDN checks Referer on the actual video/segment requests, which ffmpeg wasn't sending. Extractors can now declare a required Referer that gets passed to ffmpeg.\n- Improvement: ffmpeg failures now include the last few lines of ffmpeg's own stderr in the error message instead of just the bare exit code.",
         "targetAbi": "10.11.0.0",
         "sourceUrl": "https://github.com/Daniel-IHansen/jellyfin-universal-downloader/releases/download/v2.0.2.0/jellyfin-anibridge-downloader-2.0.2.0.zip",
         "checksum": "00000000000000000000000000000000",
