@@ -26,6 +26,18 @@ public class DoodStreamExtractor : IStreamExtractor
     private const string RefererOrigin = "https://playmogo.com/";
     private const string RandomCharPool = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
+    // DoodStream-family sites front their embeds with a Cloudflare Turnstile + FingerprintJS
+    // bot check (see class remarks). Downloading many episodes back-to-back — especially with
+    // several concurrent download workers each retrying independently — can burst dozens of
+    // requests at this host within a couple of minutes, which is exactly the pattern that check
+    // exists to catch; once tripped, the whole server IP gets a blanket 403 on every subsequent
+    // request. This gate serializes every request this extractor makes (across all concurrent
+    // callers, since the extractor is registered as a singleton) and enforces a minimum spacing
+    // between them, so a batch/season download can't hammer the host fast enough to trigger that.
+    private static readonly SemaphoreSlim RequestGate = new(1, 1);
+    private static DateTime _lastRequestUtc = DateTime.MinValue;
+    private const int MinRequestIntervalMs = 4000;
+
     private static readonly Regex PassMd5Pattern = new(
         @"/pass_md5/(?<hash>[^/'""]+)/(?<token>[a-zA-Z0-9]+)",
         RegexOptions.Compiled);
@@ -41,7 +53,32 @@ public class DoodStreamExtractor : IStreamExtractor
         _httpClient = httpClientFactory.CreateClient("AniWatch");
         _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36");
+        _httpClient.DefaultRequestHeaders.Accept.ParseAdd("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+        _httpClient.DefaultRequestHeaders.AcceptLanguage.ParseAdd("en-US,en;q=0.9");
         _logger = logger;
+    }
+
+    /// <summary>
+    /// Serializes and rate-limits every outbound request this extractor makes so concurrent
+    /// download workers/retries can't burst requests at the host fast enough to trip its
+    /// bot-detection. Must be awaited immediately before each <c>HttpClient.SendAsync</c> call.
+    /// </summary>
+    private static async Task ThrottleAsync(CancellationToken cancellationToken)
+    {
+        await RequestGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var waitMs = MinRequestIntervalMs - (int)(DateTime.UtcNow - _lastRequestUtc).TotalMilliseconds;
+            if (waitMs > 0)
+            {
+                await Task.Delay(waitMs, cancellationToken).ConfigureAwait(false);
+            }
+        }
+        finally
+        {
+            _lastRequestUtc = DateTime.UtcNow;
+            RequestGate.Release();
+        }
     }
 
     /// <inheritdoc />
@@ -62,6 +99,7 @@ public class DoodStreamExtractor : IStreamExtractor
 
             using var embedRequest = new HttpRequestMessage(HttpMethod.Get, embedUrl);
             embedRequest.Headers.Referrer = new Uri(RefererOrigin);
+            await ThrottleAsync(cancellationToken).ConfigureAwait(false);
             var embedResponse = await _httpClient.SendAsync(embedRequest, cancellationToken).ConfigureAwait(false);
             embedResponse.EnsureSuccessStatusCode();
             var html = await embedResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
@@ -81,6 +119,7 @@ public class DoodStreamExtractor : IStreamExtractor
 
             using var passRequest = new HttpRequestMessage(HttpMethod.Get, passMd5Url);
             passRequest.Headers.Referrer = new Uri(embedUrl);
+            await ThrottleAsync(cancellationToken).ConfigureAwait(false);
             var passResponse = await _httpClient.SendAsync(passRequest, cancellationToken).ConfigureAwait(false);
             passResponse.EnsureSuccessStatusCode();
             var baseUrl = (await passResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false)).Trim();
