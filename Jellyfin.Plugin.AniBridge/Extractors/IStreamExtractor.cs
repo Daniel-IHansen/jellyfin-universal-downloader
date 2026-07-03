@@ -21,10 +21,26 @@ public interface IStreamExtractor
     string? RequiredReferer => null;
 
     /// <summary>
-    /// Extracts the direct video link from a provider embed URL.
+    /// Extracts the direct video link (and, if the provider exposes one separately, a subtitle
+    /// track) from a provider embed URL.
     /// </summary>
     /// <param name="embedUrl">The provider embed URL.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The direct video URL (HLS/MP4), or null if extraction fails.</returns>
-    Task<string?> GetDirectLinkAsync(string embedUrl, CancellationToken cancellationToken = default);
+    /// <returns>The resolved stream info, or null if extraction fails.</returns>
+    Task<StreamResolveResult?> GetDirectLinkAsync(string embedUrl, CancellationToken cancellationToken = default);
+}
+
+/// <summary>
+/// Result of resolving a provider embed URL to a playable stream.
+/// </summary>
+public class StreamResolveResult
+{
+    /// <summary>Gets the direct video URL (HLS/MP4).</summary>
+    public required string VideoUrl { get; init; }
+
+    /// <summary>Gets the direct URL of a subtitle file the provider serves separately from the video, if any.</summary>
+    public string? SubtitleUrl { get; init; }
+
+    /// <summary>Gets the ISO 639-2 language code for <see cref="SubtitleUrl"/> (e.g. "eng").</summary>
+    public string? SubtitleLanguage { get; init; }
 }

@@ -554,8 +554,11 @@ public class DownloadService
                 throw new InvalidOperationException($"No extractor available for provider: {task.Provider}");
             }
 
-            streamUrl = await extractor.GetDirectLinkAsync(embedUrl, token).ConfigureAwait(false);
+            var resolveResult = await extractor.GetDirectLinkAsync(embedUrl, token).ConfigureAwait(false);
+            streamUrl = resolveResult?.VideoUrl;
             task.RequiredReferer = extractor.RequiredReferer;
+            task.SubtitleUrl = resolveResult?.SubtitleUrl;
+            task.SubtitleLanguage = resolveResult?.SubtitleLanguage;
         }
 
         if (string.IsNullOrEmpty(streamUrl))
@@ -859,6 +862,26 @@ public class DownloadService
             await DownloadHlsSegmentsToFileAsync(task.StreamUrl!, task.RequiredReferer!, localSegmentFile, task, cancellationToken).ConfigureAwait(false);
         }
 
+        // Some providers (e.g. megaplay.buzz) serve a soft subtitle track as a separate WebVTT
+        // file alongside the video rather than embedding it in the stream. Fetch it up front and
+        // mux it in as its own subtitle track; subtitles are a nice-to-have, so any failure here
+        // just logs a warning and the download proceeds without them instead of failing outright.
+        string? localSubtitleFile = null;
+        if (!string.IsNullOrEmpty(task.SubtitleUrl))
+        {
+            try
+            {
+                var dir = Path.GetDirectoryName(task.OutputPath) ?? Path.GetTempPath();
+                localSubtitleFile = Path.Combine(dir, $".{Path.GetFileNameWithoutExtension(task.OutputPath)}.{Guid.NewGuid():N}.vtt.tmp");
+                await DownloadFileAsync(task.SubtitleUrl!, task.RequiredReferer, localSubtitleFile, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger.LogWarning(ex, "Failed to download subtitle track from {Url}, continuing without subtitles", task.SubtitleUrl);
+                localSubtitleFile = null;
+            }
+        }
+
         try
         {
             // Use ProcessStartInfo.ArgumentList for safe argument passing (no shell quoting issues).
@@ -884,10 +907,36 @@ public class DownloadService
 
             startInfo.ArgumentList.Add("-i");
             startInfo.ArgumentList.Add(localSegmentFile ?? task.StreamUrl!);
+
+            if (localSubtitleFile != null)
+            {
+                startInfo.ArgumentList.Add("-i");
+                startInfo.ArgumentList.Add(localSubtitleFile);
+
+                // With a second input, ffmpeg's automatic stream selection can no longer be
+                // trusted to grab the right streams from each (the same ambiguity that caused
+                // the earlier HLS multi-program failures) — map explicitly.
+                startInfo.ArgumentList.Add("-map");
+                startInfo.ArgumentList.Add("0:v:0");
+                startInfo.ArgumentList.Add("-map");
+                startInfo.ArgumentList.Add("0:a:0");
+                startInfo.ArgumentList.Add("-map");
+                startInfo.ArgumentList.Add("1:s:0");
+            }
+
             startInfo.ArgumentList.Add("-c");
             startInfo.ArgumentList.Add("copy");
             startInfo.ArgumentList.Add("-bsf:a");
             startInfo.ArgumentList.Add("aac_adtstoasc");
+
+            if (localSubtitleFile != null)
+            {
+                startInfo.ArgumentList.Add("-metadata:s:s:0");
+                startInfo.ArgumentList.Add($"language={task.SubtitleLanguage ?? "eng"}");
+                startInfo.ArgumentList.Add("-disposition:s:0");
+                startInfo.ArgumentList.Add("default");
+            }
+
             startInfo.ArgumentList.Add("-y");
             startInfo.ArgumentList.Add(task.OutputPath);
 
@@ -908,17 +957,39 @@ public class DownloadService
         }
         finally
         {
-            if (localSegmentFile != null)
+            foreach (var tempFile in new[] { localSegmentFile, localSubtitleFile })
             {
+                if (tempFile == null)
+                {
+                    continue;
+                }
+
                 try
                 {
-                    File.Delete(localSegmentFile);
+                    File.Delete(tempFile);
                 }
                 catch (IOException)
                 {
                 }
             }
         }
+    }
+
+    /// <summary>Downloads a single file (e.g. a subtitle track) to a local path via plain HTTP.</summary>
+    private async Task DownloadFileAsync(string url, string? referer, string localPath, CancellationToken cancellationToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        if (!string.IsNullOrEmpty(referer))
+        {
+            request.Headers.Referrer = new Uri(referer);
+        }
+
+        using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+        response.EnsureSuccessStatusCode();
+
+        await using var content = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        await using var output = new FileStream(localPath, FileMode.Create, FileAccess.Write, FileShare.None);
+        await content.CopyToAsync(output, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -1117,6 +1188,14 @@ public class DownloadTask
     /// <summary>Gets or sets the Referer header ffmpeg must send when fetching <see cref="StreamUrl"/>, if the resolving extractor requires one.</summary>
     [JsonIgnore]
     public string? RequiredReferer { get; set; }
+
+    /// <summary>Gets or sets the direct URL of a subtitle file the provider serves separately from the video, if any.</summary>
+    [JsonIgnore]
+    public string? SubtitleUrl { get; set; }
+
+    /// <summary>Gets or sets the ISO 639-2 language code for <see cref="SubtitleUrl"/> (e.g. "eng").</summary>
+    [JsonIgnore]
+    public string? SubtitleLanguage { get; set; }
 
     /// <summary>Gets or sets the download status.</summary>
     public DownloadStatus Status { get; set; }

@@ -64,7 +64,7 @@ public class MegaplayExtractor : IStreamExtractor
     public string? RequiredReferer => StreamReferer;
 
     /// <inheritdoc />
-    public async Task<string?> GetDirectLinkAsync(string embedUrl, CancellationToken cancellationToken = default)
+    public async Task<StreamResolveResult?> GetDirectLinkAsync(string embedUrl, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -93,11 +93,6 @@ public class MegaplayExtractor : IStreamExtractor
             sourcesResponse.EnsureSuccessStatusCode();
             var json = await sourcesResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
 
-            // Logged at Information level (not Debug) so it shows up with Jellyfin's default log
-            // level — temporary diagnostic to confirm whether this endpoint's response includes a
-            // "tracks" array (subtitle files), which nothing in this extractor currently reads.
-            _logger.LogInformation("Megaplay getSources raw response: {Json}", json);
-
             using var doc = JsonDocument.Parse(json);
             if (doc.RootElement.TryGetProperty("sources", out var sources) &&
                 sources.TryGetProperty("file", out var file))
@@ -107,10 +102,18 @@ public class MegaplayExtractor : IStreamExtractor
 
                 if (string.IsNullOrEmpty(streamUrl))
                 {
-                    return streamUrl;
+                    return null;
                 }
 
-                return await ResolveBestVariantAsync(streamUrl, cancellationToken).ConfigureAwait(false);
+                var videoUrl = await ResolveBestVariantAsync(streamUrl, cancellationToken).ConfigureAwait(false);
+                var subtitleUrl = ExtractSubtitleUrl(doc.RootElement);
+
+                return new StreamResolveResult
+                {
+                    VideoUrl = videoUrl,
+                    SubtitleUrl = subtitleUrl,
+                    SubtitleLanguage = subtitleUrl != null ? "eng" : null,
+                };
             }
 
             _logger.LogWarning("Megaplay getSources response had no sources.file: {Json}", json);
@@ -121,6 +124,58 @@ public class MegaplayExtractor : IStreamExtractor
             _logger.LogError(ex, "Failed to extract Megaplay direct link from {Url}", embedUrl);
             return null;
         }
+    }
+
+    /// <summary>
+    /// megaplay.buzz's getSources response carries an optional top-level "tracks" array —
+    /// separate WebVTT subtitle files alongside the video (e.g.
+    /// <c>"tracks":[{"file":"...vtt","label":"English","kind":"captions","default":true}]</c>).
+    /// Picks the entry marked <c>default</c>, falling back to the first "captions"/"subtitles"
+    /// entry if none is marked default.
+    /// </summary>
+    private static string? ExtractSubtitleUrl(JsonElement root)
+    {
+        if (!root.TryGetProperty("tracks", out var tracks) || tracks.ValueKind != JsonValueKind.Array)
+        {
+            return null;
+        }
+
+        string? firstCaption = null;
+        foreach (var track in tracks.EnumerateArray())
+        {
+            if (!track.TryGetProperty("kind", out var kindEl))
+            {
+                continue;
+            }
+
+            var kind = kindEl.GetString();
+            if (!string.Equals(kind, "captions", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(kind, "subtitles", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (!track.TryGetProperty("file", out var fileEl))
+            {
+                continue;
+            }
+
+            var fileUrl = fileEl.GetString();
+            if (string.IsNullOrEmpty(fileUrl))
+            {
+                continue;
+            }
+
+            firstCaption ??= fileUrl;
+
+            if (track.TryGetProperty("default", out var defaultEl) &&
+                defaultEl.ValueKind == JsonValueKind.True)
+            {
+                return fileUrl;
+            }
+        }
+
+        return firstCaption;
     }
 
     /// <summary>
