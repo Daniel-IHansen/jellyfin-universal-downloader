@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -34,6 +35,7 @@ public class DownloadService
     private readonly IMediaEncoder _mediaEncoder;
     private readonly ILibraryMonitor _libraryMonitor;
     private readonly ILogger<DownloadService> _logger;
+    private readonly HttpClient _httpClient;
     private readonly ConcurrentDictionary<string, DownloadTask> _activeTasks = new();
     private readonly Channel<DownloadTask> _downloadQueue = Channel.CreateUnbounded<DownloadTask>(
         new UnboundedChannelOptions { SingleReader = false });
@@ -52,6 +54,7 @@ public class DownloadService
         IEnumerable<IStreamExtractor> extractors,
         IMediaEncoder mediaEncoder,
         ILibraryMonitor libraryMonitor,
+        IHttpClientFactory httpClientFactory,
         ILogger<DownloadService> logger)
     {
         _services = services.ToDictionary(s => s.SourceName, StringComparer.OrdinalIgnoreCase);
@@ -59,6 +62,7 @@ public class DownloadService
         _extractors = extractors;
         _mediaEncoder = mediaEncoder;
         _libraryMonitor = libraryMonitor;
+        _httpClient = httpClientFactory.CreateClient("Anikoto");
         _logger = logger;
 
         // Mark any downloads that were in-progress when Jellyfin last shut down
@@ -837,64 +841,152 @@ public class DownloadService
             throw new InvalidOperationException("ffmpeg not found. Please ensure ffmpeg is installed.");
         }
 
-        // Use ProcessStartInfo.ArgumentList for safe argument passing (no shell quoting issues).
-        // This prevents argument injection via crafted stream URLs or file paths.
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = ffmpegPath,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-        };
-
-        startInfo.ArgumentList.Add("-reconnect");
-        startInfo.ArgumentList.Add("1");
-        startInfo.ArgumentList.Add("-reconnect_streamed");
-        startInfo.ArgumentList.Add("1");
-        startInfo.ArgumentList.Add("-reconnect_delay_max");
-        startInfo.ArgumentList.Add("5");
-
         // Some providers' CDNs (e.g. megaplay.buzz's) disguise HLS segments with unrelated
-        // extensions (seen: ".jpg") to dodge naive content filters. Upstream ffmpeg's HLS
-        // demuxer rejects segment URLs whose extension isn't on its built-in safe list via
-        // "-allowed_extensions", but Jellyfin's own ffmpeg fork additionally bolts on a
-        // *separate* segment-level check (error text: "is not in allowed_segment_extensions") —
-        // a hardening patch from a past Jellyfin security advisory about malicious HLS
-        // playlists referencing arbitrary local files. Both need to be set to ALL.
-        startInfo.ArgumentList.Add("-allowed_extensions");
-        startInfo.ArgumentList.Add("ALL");
-        startInfo.ArgumentList.Add("-allowed_segment_extensions");
-        startInfo.ArgumentList.Add("ALL");
-
-        // Some providers' CDNs (e.g. megaplay.buzz) check Referer on the manifest/segment
-        // requests themselves — ffmpeg sends none by default, so pass it explicitly when the
-        // extractor that resolved this stream says it's required.
+        // extensions (seen: ".jpg", ".html") to dodge naive content filters. Jellyfin's ffmpeg
+        // fork rejects these at multiple, increasingly specific layers — an "-allowed_extensions"
+        // check, a separate "-allowed_segment_extensions" check, and then a content-vs-extension
+        // mismatch check after the segment is actually opened ("detected format mpegts extension
+        // ... mismatches allowed extensions") — with no single flag that reliably defeats all of
+        // them across every variant of this trick. Rather than keep chasing new flags, download
+        // the playlist's segments ourselves (plain HTTP, no extension games affect us) and
+        // concatenate them into a local .ts file; ffmpeg then only ever sees a local file, so
+        // none of its network-fetch safety checks apply at all.
+        string? localSegmentFile = null;
         if (!string.IsNullOrEmpty(task.RequiredReferer))
         {
-            startInfo.ArgumentList.Add("-headers");
-            startInfo.ArgumentList.Add($"Referer: {task.RequiredReferer}\r\n");
+            var dir = Path.GetDirectoryName(task.OutputPath) ?? Path.GetTempPath();
+            localSegmentFile = Path.Combine(dir, $".{Path.GetFileNameWithoutExtension(task.OutputPath)}.{Guid.NewGuid():N}.ts.tmp");
+            await DownloadHlsSegmentsToFileAsync(task.StreamUrl!, task.RequiredReferer!, localSegmentFile, task, cancellationToken).ConfigureAwait(false);
         }
 
-        startInfo.ArgumentList.Add("-i");
-        startInfo.ArgumentList.Add(task.StreamUrl!);
-        startInfo.ArgumentList.Add("-c");
-        startInfo.ArgumentList.Add("copy");
-        startInfo.ArgumentList.Add("-bsf:a");
-        startInfo.ArgumentList.Add("aac_adtstoasc");
-        startInfo.ArgumentList.Add("-y");
-        startInfo.ArgumentList.Add(task.OutputPath);
-
-        // Pass proxy to ffmpeg via the http_proxy environment variable
-        var proxyUrl = Plugin.Instance?.Configuration?.ProxyUrl;
-        if (!string.IsNullOrWhiteSpace(proxyUrl))
+        try
         {
-            startInfo.Environment["http_proxy"] = proxyUrl;
-            startInfo.Environment["HTTP_PROXY"] = proxyUrl;
+            // Use ProcessStartInfo.ArgumentList for safe argument passing (no shell quoting issues).
+            // This prevents argument injection via crafted stream URLs or file paths.
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = ffmpegPath,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            };
+
+            if (localSegmentFile == null)
+            {
+                startInfo.ArgumentList.Add("-reconnect");
+                startInfo.ArgumentList.Add("1");
+                startInfo.ArgumentList.Add("-reconnect_streamed");
+                startInfo.ArgumentList.Add("1");
+                startInfo.ArgumentList.Add("-reconnect_delay_max");
+                startInfo.ArgumentList.Add("5");
+            }
+
+            startInfo.ArgumentList.Add("-i");
+            startInfo.ArgumentList.Add(localSegmentFile ?? task.StreamUrl!);
+            startInfo.ArgumentList.Add("-c");
+            startInfo.ArgumentList.Add("copy");
+            startInfo.ArgumentList.Add("-bsf:a");
+            startInfo.ArgumentList.Add("aac_adtstoasc");
+            startInfo.ArgumentList.Add("-y");
+            startInfo.ArgumentList.Add(task.OutputPath);
+
+            // Pass proxy to ffmpeg via the http_proxy environment variable
+            var proxyUrl = Plugin.Instance?.Configuration?.ProxyUrl;
+            if (!string.IsNullOrWhiteSpace(proxyUrl))
+            {
+                startInfo.Environment["http_proxy"] = proxyUrl;
+                startInfo.Environment["HTTP_PROXY"] = proxyUrl;
+            }
+
+            _logger.LogDebug("Running ffmpeg for: {Url} -> {Path}", localSegmentFile ?? task.StreamUrl, task.OutputPath);
+
+            // When segments were pre-downloaded, that phase already reported 0-50%; leave the
+            // remaining 50-99% for this remux phase instead of resetting back to 0%.
+            var progressFloor = localSegmentFile != null ? 50 : 0;
+            await RunFfmpegProcessAsync(startInfo, task, progressFloor, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            if (localSegmentFile != null)
+            {
+                try
+                {
+                    File.Delete(localSegmentFile);
+                }
+                catch (IOException)
+                {
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Downloads every segment referenced by an HLS media playlist (already resolved to a
+    /// single bitrate variant) and concatenates them byte-for-byte into a local file — valid for
+    /// MPEG-TS, which is designed to be split/joined at packet boundaries. Reports 0-50% of
+    /// overall task progress during this phase.
+    /// </summary>
+    private async Task DownloadHlsSegmentsToFileAsync(
+        string playlistUrl,
+        string referer,
+        string localPath,
+        DownloadTask task,
+        CancellationToken cancellationToken)
+    {
+        using var playlistRequest = new HttpRequestMessage(HttpMethod.Get, playlistUrl);
+        playlistRequest.Headers.Referrer = new Uri(referer);
+        using var playlistResponse = await _httpClient.SendAsync(playlistRequest, cancellationToken).ConfigureAwait(false);
+        playlistResponse.EnsureSuccessStatusCode();
+        var playlist = await playlistResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+
+        if (Regex.IsMatch(playlist, @"#EXT-X-KEY:(?!.*METHOD=NONE)"))
+        {
+            throw new InvalidOperationException("HLS stream uses segment encryption, which isn't supported");
         }
 
-        _logger.LogDebug("Running ffmpeg for: {Url} -> {Path}", task.StreamUrl, task.OutputPath);
+        var baseUri = new Uri(playlistUrl);
+        var segmentUrls = new List<string>();
+        foreach (var rawLine in playlist.Split('\n'))
+        {
+            var line = rawLine.Trim();
+            if (line.Length == 0 || line.StartsWith('#'))
+            {
+                continue;
+            }
 
+            segmentUrls.Add(new Uri(baseUri, line).ToString());
+        }
+
+        if (segmentUrls.Count == 0)
+        {
+            throw new InvalidOperationException("HLS playlist contained no segments");
+        }
+
+        await using (var output = new FileStream(localPath, FileMode.Create, FileAccess.Write, FileShare.None))
+        {
+            for (var i = 0; i < segmentUrls.Count; i++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                using var segmentRequest = new HttpRequestMessage(HttpMethod.Get, segmentUrls[i]);
+                segmentRequest.Headers.Referrer = new Uri(referer);
+                using var segmentResponse = await _httpClient.SendAsync(
+                    segmentRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                segmentResponse.EnsureSuccessStatusCode();
+
+                await using var segmentStream = await segmentResponse.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+                await segmentStream.CopyToAsync(output, cancellationToken).ConfigureAwait(false);
+
+                task.Progress = (int)((i + 1) / (double)segmentUrls.Count * 50);
+            }
+        }
+
+        task.FileSizeBytes = new FileInfo(localPath).Length;
+    }
+
+    private async Task RunFfmpegProcessAsync(ProcessStartInfo startInfo, DownloadTask task, int progressFloor, CancellationToken cancellationToken)
+    {
         using var process = new Process { StartInfo = startInfo };
         process.Start();
 
@@ -935,7 +1027,8 @@ public class DownloadService
                 {
                     if (totalDuration.HasValue && totalDuration.Value.TotalSeconds > 0)
                     {
-                        task.Progress = Math.Min(99, (int)(currentTime.TotalSeconds / totalDuration.Value.TotalSeconds * 100));
+                        var ratio = currentTime.TotalSeconds / totalDuration.Value.TotalSeconds;
+                        task.Progress = Math.Min(99, progressFloor + (int)(ratio * (99 - progressFloor)));
                     }
                 }
 
