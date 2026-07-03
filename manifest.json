@@ -8,6 +8,14 @@
     "category": "General",
     "versions": [
       {
+        "version": "2.0.2.3",
+        "changelog": "v2.0.2.3\n- Fix: Megaplay downloads still failing after all retries (\"ffmpeg exited with code 234: ... Output file does not contain any stream\") \u2014 megaplay.buzz's HLS master playlist exposes each bitrate rendition as its own ffmpeg \"program\", which broke ffmpeg's automatic stream selection and left it mapping zero streams. ffmpeg is now told explicitly which video/audio stream to grab (-map 0:v:0 -map 0:a:0) instead of relying on automatic selection.",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://github.com/Daniel-IHansen/jellyfin-universal-downloader/releases/download/v2.0.2.3/jellyfin-anibridge-downloader-v2.0.2.3.zip",
+        "checksum": "078beb509022ddd2440b211472821708",
+        "timestamp": "2026-07-03T11:02:34Z"
+      },
+      {
         "version": "2.0.2.2",
         "changelog": "",
         "targetAbi": "10.11.0.0",
