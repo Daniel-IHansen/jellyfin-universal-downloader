@@ -8,6 +8,14 @@
     "category": "General",
     "versions": [
       {
+        "version": "2.0.3.1",
+        "changelog": "v2.0.3.1\n- Fix: Megaplay downloads still failing (ffmpeg exit 183, \"detected format mpegts extension ... mismatches allowed extensions\") after v2.0.2.6 \u2014 megaplay.buzz's CDNs disguise HLS segments with unrelated extensions, and Jellyfin's ffmpeg fork enforces this at multiple, increasingly specific layers with no single flag that reliably defeats all of them. Rather than keep chasing new ffmpeg flags, the plugin now downloads HLS segments itself (plain HTTP) and concatenates them into a local file before handing it to ffmpeg, which sidesteps every one of ffmpeg's network-fetch extension checks entirely.",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://github.com/Daniel-IHansen/jellyfin-universal-downloader/releases/download/v2.0.3.1/jellyfin-anibridge-downloader-v2.0.3.1.zip",
+        "checksum": "0421ff098f2f88f5ed4fb567b35f6108",
+        "timestamp": "2026-07-03T12:00:33Z"
+      },
+      {
         "version": "2.0.2.6",
         "changelog": "v2.0.2.6\n- Fix: Megaplay downloads still failing with the same ffmpeg exit 183 (\"is not in allowed_segment_extensions\") after v2.0.2.5 \u2014 that fix set upstream ffmpeg's \"-allowed_extensions\" option, but Jellyfin's own ffmpeg fork enforces a *separate*, additional segment-level check (a hardening patch from a past Jellyfin security advisory about malicious HLS playlists referencing arbitrary local files), which needed its own \"-allowed_segment_extensions ALL\" to be set. Both are now passed.",
         "targetAbi": "10.11.0.0",
