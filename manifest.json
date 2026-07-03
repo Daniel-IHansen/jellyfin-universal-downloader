@@ -8,6 +8,14 @@
     "category": "General",
     "versions": [
       {
+        "version": "2.0.2.6",
+        "changelog": "v2.0.2.6\n- Fix: Megaplay downloads still failing with the same ffmpeg exit 183 (\"is not in allowed_segment_extensions\") after v2.0.2.5 \u2014 that fix set upstream ffmpeg's \"-allowed_extensions\" option, but Jellyfin's own ffmpeg fork enforces a *separate*, additional segment-level check (a hardening patch from a past Jellyfin security advisory about malicious HLS playlists referencing arbitrary local files), which needed its own \"-allowed_segment_extensions ALL\" to be set. Both are now passed.",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://github.com/Daniel-IHansen/jellyfin-universal-downloader/releases/download/v2.0.2.6/jellyfin-anibridge-downloader-v2.0.2.6.zip",
+        "checksum": "0aaf56ae4427cfba035ae660d655bb3d",
+        "timestamp": "2026-07-03T11:33:49Z"
+      },
+      {
         "version": "2.0.2.5",
         "changelog": "v2.0.2.5\n- Fix: Megaplay downloads failing with ffmpeg exit 183 (\"is not in allowed_segment_extensions\" / \"Invalid data found when processing input\") \u2014 some of megaplay.buzz's backing CDNs (e.g. mewstream.buzz, flarestorm.buzz) serve HLS video segments disguised with unrelated extensions like \".jpg\". ffmpeg's HLS demuxer rejects segment URLs whose extension isn't on its built-in safe list by default, so -allowed_extensions ALL is now passed to ffmpeg for every download.",
         "targetAbi": "10.11.0.0",
