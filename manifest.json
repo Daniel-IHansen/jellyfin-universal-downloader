@@ -8,6 +8,14 @@
     "category": "General",
     "versions": [
       {
+        "version": "2.0.3.2",
+        "changelog": "v2.0.3.2\n- Diagnostic: MegaplayExtractor now logs the raw getSources JSON response at Information level, to confirm whether it includes a \"tracks\" array (subtitle files) that the extractor currently ignores \u2014 English Sub downloads appear to have no subtitles at all, which points at a missed soft-subtitle track rather than hardsubbed video. No behavior change yet.",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://github.com/Daniel-IHansen/jellyfin-universal-downloader/releases/download/v2.0.3.2/jellyfin-anibridge-downloader-v2.0.3.2.zip",
+        "checksum": "5dafdd2fa51bcc33bf3b9aa65d8cc43c",
+        "timestamp": "2026-07-03T12:20:10Z"
+      },
+      {
         "version": "2.0.3.1",
         "changelog": "v2.0.3.1\n- Fix: Megaplay downloads still failing (ffmpeg exit 183, \"detected format mpegts extension ... mismatches allowed extensions\") after v2.0.2.6 \u2014 megaplay.buzz's CDNs disguise HLS segments with unrelated extensions, and Jellyfin's ffmpeg fork enforces this at multiple, increasingly specific layers with no single flag that reliably defeats all of them. Rather than keep chasing new ffmpeg flags, the plugin now downloads HLS segments itself (plain HTTP) and concatenates them into a local file before handing it to ffmpeg, which sidesteps every one of ffmpeg's network-fetch extension checks entirely.",
         "targetAbi": "10.11.0.0",
