@@ -8,6 +8,14 @@
     "category": "General",
     "versions": [
       {
+        "version": "2.0.2.5",
+        "changelog": "v2.0.2.5\n- Fix: Megaplay downloads failing with ffmpeg exit 183 (\"is not in allowed_segment_extensions\" / \"Invalid data found when processing input\") \u2014 some of megaplay.buzz's backing CDNs (e.g. mewstream.buzz, flarestorm.buzz) serve HLS video segments disguised with unrelated extensions like \".jpg\". ffmpeg's HLS demuxer rejects segment URLs whose extension isn't on its built-in safe list by default, so -allowed_extensions ALL is now passed to ffmpeg for every download.",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://github.com/Daniel-IHansen/jellyfin-universal-downloader/releases/download/v2.0.2.5/jellyfin-anibridge-downloader-v2.0.2.5.zip",
+        "checksum": "acc37d6fbe4df692d360fc461f86209e",
+        "timestamp": "2026-07-03T11:24:29Z"
+      },
+      {
         "version": "2.0.2.4",
         "changelog": "v2.0.2.4\n- Fix: Megaplay downloads still failing intermittently (ffmpeg exit 234, \"Output file does not contain any stream\" or \"Stream map matches no streams\") \u2014 the v2.0.2.3 fix of explicitly mapping -map 0:v:0/0:a:0 didn't hold up against every variant layout of megaplay.buzz's multi-program HLS master playlist. MegaplayExtractor now resolves the master playlist itself and picks the highest-bandwidth variant's own single-program media playlist up front, so ffmpeg only ever sees one program and its default automatic stream selection works reliably again (the explicit -map has been removed).",
         "targetAbi": "10.11.0.0",
