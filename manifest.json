@@ -8,6 +8,14 @@
     "category": "General",
     "versions": [
       {
+        "version": "2.0.4.0",
+        "changelog": "v2.0.4.0\n- Feature: English Sub downloads via Megaplay now include subtitles \u2014 megaplay.buzz's getSources response was found to carry a separate \"tracks\" array with a WebVTT subtitle file that nothing previously read. MegaplayExtractor now captures it, and DownloadService downloads it and muxes it into the output MKV as a proper subtitle track (marked default, language=eng), instead of the file having no subtitles at all.",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://github.com/Daniel-IHansen/jellyfin-universal-downloader/releases/download/v2.0.4.0/jellyfin-anibridge-downloader-v2.0.4.0.zip",
+        "checksum": "94d279c666b4926428bf8b5ebebf8088",
+        "timestamp": "2026-07-03T12:45:22Z"
+      },
+      {
         "version": "2.0.3.2",
         "changelog": "v2.0.3.2\n- Diagnostic: MegaplayExtractor now logs the raw getSources JSON response at Information level, to confirm whether it includes a \"tracks\" array (subtitle files) that the extractor currently ignores \u2014 English Sub downloads appear to have no subtitles at all, which points at a missed soft-subtitle track rather than hardsubbed video. No behavior change yet.",
         "targetAbi": "10.11.0.0",
