@@ -1,6 +1,6 @@
 # Jellyfin AniBridge Downloader
 
-> **Note:** This is a renamed/reworked fork of the original *Jellyfin AniWorld Downloader* by SiroxCW, extended to support multiple streaming sites. The badge/release URLs below still point at the upstream repo layout as placeholders — update them once you push this to your own repository.
+> **Note:** This is a renamed/reworked fork of the original *Jellyfin AniWorld Downloader* by SiroxCW, extended to support multiple streaming sites. The badge/release URLs below still point at the upstream repo layout as placeholders.
 
 A Jellyfin plugin for searching and downloading anime and series from multiple streaming sites, directly inside Jellyfin's web interface. **English Sub/Dub only — no German.**
 
