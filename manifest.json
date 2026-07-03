@@ -4,14 +4,14 @@
     "name": "AniBridge Downloader",
     "overview": "Download anime and series from multiple streaming sites directly within Jellyfin (English Sub/Dub only)",
     "description": "Search, browse, and download anime and series from multiple streaming sites (AniWorld, s.to, Anikoto, Anime Nexus) directly within Jellyfin. English Sub/Dub only — no German. Adding a new site is a single pluggable adapter class.",
-    "owner": "SiroxCW",
+    "owner": "Daniel-IHansen",
     "category": "General",
     "versions": [
       {
         "version": "2.0.0.0",
         "changelog": "v2.0.0.0\n- Renamed to AniBridge Downloader (previously AniWorld Downloader) to reflect multi-site support. This is a new plugin GUID — uninstall the old \"AniWorld Downloader\" plugin and reconfigure download paths after installing this one.\n- Feature: Pluggable site architecture — adding a new streaming site is a single service class, no controller/config changes required.\n- Feature: Added Anikoto (anikoto.net) support, English Sub and Dub, via a community-documented third-party API.\n- Feature: Added Anime Nexus (anime.nexus) support as an experimental, disabled-by-default adapter (unverified — anime.nexus has no public API and blocks automated research tools).\n- Change: English Sub/Dub only across every source. All German language options have been removed, including from AniWorld and s.to.\n- Change: Replaced all emoji in the UI with lucide.dev icons.\n- Change: Config UI reorganized into one section per site; German-only toggle and numeric language-fallback-order removed in favor of a single Sub/Dub fallback checkbox.\n- Removed: The /Flag endpoint and per-language flag SVGs — languages are now shown as icons (captions = Sub, mic = Dub).",
         "targetAbi": "10.11.0.0",
-        "sourceUrl": "https://github.com/SiroxCW/Jellyfin-AniWorld-Downloader/releases/download/v2.0.0.0/jellyfin-anibridge-downloader-v2.0.0.0.zip",
+        "sourceUrl": "https://github.com/Daniel-IHansen/jellyfin-universal-downloader/releases/download/v2.0.0.0/jellyfin-anibridge-downloader-v2.0.0.0.zip",
         "checksum": "00000000000000000000000000000000",
         "timestamp": "2026-07-03T00:00:00Z"
       }

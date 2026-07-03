@@ -5,7 +5,7 @@
   "guid": "7c1a9e3d-5b2f-4a68-9d3e-2f6b8c4a1e70",
   "name": "AniBridge Downloader",
   "overview": "Download anime and series from multiple streaming sites directly within Jellyfin (English Sub/Dub only)",
-  "owner": "SiroxCW",
+  "owner": "Daniel-IHansen",
   "targetAbi": "10.11.0.0",
   "timestamp": "2026-07-03T00:00:00Z",
   "version": "2.0.0.0",
