@@ -8,6 +8,14 @@
     "category": "General",
     "versions": [
       {
+        "version": "2.2.0.0",
+        "changelog": "v2.2.0.0\n- Removed: Anime Nexus (anime.nexus) support \u2014 it was never verified against real network traffic (the site's robots.txt blocks automated research tools) and the best-effort guessed API conventions could not be confirmed. AnimeNexusService, its icon, and its config UI section are gone.\n- Feature: Added a MegaCloudExtractor, decoding AniWatch's MegaCloud-backed server (megacloudx.net) \u2014 unlike a typical MegaCloud/rabbitstream embed, this whitelabelled instance renders its signed HLS master playlist straight into the embed page as a plain JS variable, no decryption or token exchange needed. AniWatch now offers two working providers (MegaCloud, DoodStream).\n- Change: AniWatch's default preferred provider switched from DoodStream to MegaCloud, with DoodStream configured as the automatic fallback \u2014 DoodStream's Cloudflare Turnstile/FingerprintJS bot check can blanket-403 a server's IP under sustained batch-download traffic, so MegaCloud (which has no such gate) is now tried first.",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://github.com/Daniel-IHansen/jellyfin-universal-downloader/releases/download/v2.2.0.0/jellyfin-anibridge-downloader-v2.2.0.0.zip",
+        "checksum": "c0f0793b935b863fee7d2a430b8c471b",
+        "timestamp": "2026-07-04T12:04:02Z"
+      },
+      {
         "version": "2.1.1.0",
         "changelog": "v2.1.1.0\n- Fix: DoodStream downloads reliably failing with a hard 403 Forbidden from playmogo.com on every attempt/every episode of a batch download \u2014 downloading many episodes back-to-back (especially with 2 concurrent download workers each independently retrying) was bursting dozens of requests at the embed host within minutes, tripping its Cloudflare Turnstile/FingerprintJS bot check and getting the whole server IP blocked. DoodStreamExtractor now serializes and rate-limits every request it makes (at least 4s apart, across all concurrent callers) so a season download can't trigger this, and sends fuller browser-like Accept/Accept-Language headers.",
         "targetAbi": "10.11.0.0",
