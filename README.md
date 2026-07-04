@@ -12,13 +12,12 @@ Series View| Search View
 
 - **Search and browse** anime and series with cover art, popular titles, and new releases
 - **Download** individual episodes, full seasons, or entire series
-- **Three sites supported**, each a self-contained adapter — adding another site is a single new class, no controller/config changes needed:
+- **Two sites supported**, each a self-contained adapter — adding another site is a single new class, no controller/config changes needed:
   | Site | Content | Languages | Status |
   |------|---------|-----------|--------|
   | [anikoto.net](https://anikoto.net) | Anime | English Sub + Dub | Best-effort (built against a community-documented third-party API — anikoto.net itself blocks automated access) |
-  | [anime.nexus](https://anime.nexus) | Anime | English Sub + Dub | **Experimental, disabled by default** — no public API exists and the site blocks automated research tools, so this integration is an unverified guess at its REST conventions |
-  | [aniwatch.one](https://aniwatch.one) | Anime | English Sub + Dub | Verified against live HTML. Only its DoodStream-backed server has a working extractor so far — the site also offers MegaCloud/rabbitstream and a custom-player server per episode, but those aren't surfaced yet since no extractor decodes them |
-- Anikoto/Anime Nexus resolve directly to a playable stream URL via their own APIs (Anikoto's Megaplay-backed server needs a dedicated extractor to decode its embed page); AniWatch scrapes the embed URL straight out of the episode page HTML and hands it to the matching extractor (DoodStream)
+  | [aniwatch.one](https://aniwatch.one) | Anime | English Sub + Dub | Verified against live HTML. MegaCloud and DoodStream servers both have working extractors (MegaCloud preferred by default — DoodStream's anti-bot check can block a server's IP under sustained batch-download traffic); the site also offers a third, custom-player server per episode that isn't surfaced yet since no extractor decodes it |
+- Anikoto resolves directly to a playable stream URL via its own API (its Megaplay-backed server needs a dedicated extractor to decode its embed page); AniWatch scrapes the embed URL straight out of the episode page HTML and hands it to the matching extractor (MegaCloud or DoodStream)
 - **Download manager** with real-time progress, cancel, retry, and batch operations
 - **Automatic retries** with exponential backoff, provider fallback, and optional Sub↔Dub language fallback
 - **Auto library scan** so new episodes appear in Jellyfin immediately
@@ -145,9 +144,13 @@ Implement `StreamingSiteService`, declare which of its native language identifie
 
 ## Known Issues
 
-### Anikoto / Anime Nexus may not work out of the box
+### Anikoto may not work out of the box
 
-Both integrations were built without the ability to inspect the sites' real network traffic (Anikoto's own site and anime.nexus both block automated fetch tools). Anikoto is built against a documented community API wrapper and should be reasonably solid; Anime Nexus is a best-effort guess at conventional REST endpoints and is disabled by default. If either fails, check the plugin logs (Dashboard > Logs) for the actual HTTP responses — that will show which endpoint path or JSON property name needs adjusting in `AnikotoService.cs` / `AnimeNexusService.cs`.
+Anikoto was built without the ability to inspect the site's real network traffic (anikoto.net blocks automated fetch tools). It's built against a documented community API wrapper and should be reasonably solid, but if it fails, check the plugin logs (Dashboard > Logs) for the actual HTTP responses — that will show which endpoint path or JSON property name needs adjusting in `AnikotoService.cs`.
+
+### AniWatch's DoodStream server may get blocked under heavy use
+
+DoodStream fronts its embeds with a Cloudflare Turnstile/FingerprintJS bot check that can blanket-403 your server's IP if it sees too many requests in a short window (e.g. a large batch/season download). `DoodStreamExtractor` already rate-limits its own requests to stay under that threshold, but if your IP still gets flagged, switch AniWatch's preferred provider to MegaCloud (the default) or wait it out — the block is per-IP and temporary.
 
 ## Legal Disclaimer
 

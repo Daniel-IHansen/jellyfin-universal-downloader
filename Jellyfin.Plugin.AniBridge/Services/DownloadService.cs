@@ -1242,7 +1242,7 @@ public class DownloadTask
     /// <summary>Gets or sets the file size in bytes.</summary>
     public long FileSizeBytes { get; set; }
 
-    /// <summary>Gets or sets the source site (e.g. "anikoto", "animenexus", "aniwatch").</summary>
+    /// <summary>Gets or sets the source site (e.g. "anikoto", "aniwatch").</summary>
     public string Source { get; set; } = "anikoto";
 
     /// <summary>Gets or sets the username of the user who queued the download.</summary>

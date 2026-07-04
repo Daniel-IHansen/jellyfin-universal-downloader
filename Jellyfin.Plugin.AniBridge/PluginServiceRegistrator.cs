@@ -21,8 +21,6 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
     {
         serviceCollection.AddHttpClient("Anikoto", c => c.Timeout = TimeSpan.FromSeconds(HttpClientTimeoutSeconds))
             .ConfigurePrimaryHttpMessageHandler(ConfigureHandler);
-        serviceCollection.AddHttpClient("AnimeNexus", c => c.Timeout = TimeSpan.FromSeconds(HttpClientTimeoutSeconds))
-            .ConfigurePrimaryHttpMessageHandler(ConfigureHandler);
         serviceCollection.AddHttpClient("AniWatch", c => c.Timeout = TimeSpan.FromSeconds(HttpClientTimeoutSeconds))
             .ConfigurePrimaryHttpMessageHandler(ConfigureHandler);
 
@@ -32,13 +30,13 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         // knowing about any specific site). Adding a new site adapter later only requires two
         // lines here — no controller/config changes needed.
         AddSite<AnikotoService>(serviceCollection);
-        AddSite<AnimeNexusService>(serviceCollection);
         AddSite<AniWatchService>(serviceCollection);
 
         serviceCollection.AddSingleton<DownloadHistoryService>();
         serviceCollection.AddSingleton<DownloadService>();
         serviceCollection.AddSingleton<IStreamExtractor, MegaplayExtractor>();
         serviceCollection.AddSingleton<IStreamExtractor, DoodStreamExtractor>();
+        serviceCollection.AddSingleton<IStreamExtractor, MegaCloudExtractor>();
     }
 
     private static void AddSite<TService>(IServiceCollection serviceCollection)

@@ -90,23 +90,12 @@ public class PluginConfiguration : BasePluginConfiguration
         },
         new SiteConfigEntry
         {
-            Source = "animenexus",
-            Config = new SiteDownloaderConfig
-            {
-                Enabled = false,
-                PreferredProvider = "AnimeNexus",
-                DownloadPath = "/Media/Anime",
-                DownloadPathSub = "/Media/Anime/sub",
-                DownloadPathDub = "/Media/Anime/dub",
-            },
-        },
-        new SiteConfigEntry
-        {
             Source = "aniwatch",
             Config = new SiteDownloaderConfig
             {
                 Enabled = true,
-                PreferredProvider = "DoodStream",
+                PreferredProvider = "MegaCloud",
+                FallbackProvider = "DoodStream",
                 DownloadPath = "/Media/Anime",
                 DownloadPathSub = "/Media/Anime/sub",
                 DownloadPathDub = "/Media/Anime/dub",

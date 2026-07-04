@@ -26,9 +26,9 @@ public static class PathHelper
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     /// <summary>
-    /// Regex to extract the episode number from a flat-episode-list site's URL (Anikoto,
-    /// Anime Nexus) — these sites have no season concept, so a "?n=" query parameter carries
-    /// the human episode number and everything is treated as Season 1.
+    /// Regex to extract the episode number from a flat-episode-list site's URL (Anikoto) — these
+    /// sites have no season concept, so a "?n=" query parameter carries the human episode number
+    /// and everything is treated as Season 1.
     /// </summary>
     public static readonly Regex FlatEpisodeNumberFromUrl = new(
         @"[?&]n=(?<episode>\d+)",
@@ -36,8 +36,8 @@ public static class PathHelper
 
     /// <summary>
     /// Regex to extract the episode number from AniWatch's flat-episode-list URL shape
-    /// (<c>/watch/{slug}/episode/{n}</c>) — like Anikoto/Anime Nexus, this site has no season
-    /// concept, so everything is treated as Season 1.
+    /// (<c>/watch/{slug}/episode/{n}</c>) — like Anikoto, this site has no season concept, so
+    /// everything is treated as Season 1.
     /// </summary>
     public static readonly Regex FlatEpisodePathFromUrl = new(
         @"/episode/(?<episode>\d+)(?:$|[/?\#])",

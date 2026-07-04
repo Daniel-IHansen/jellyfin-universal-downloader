@@ -87,7 +87,6 @@ export default function (view, params) {
         aniworld: ['sub'],
         sto: ['dub'],
         anikoto: ['sub', 'dub'],
-        animenexus: ['sub', 'dub'],
         aniwatch: ['sub', 'dub'],
     };
 

@@ -140,43 +140,6 @@
                         </div>
                     </div>
 
-                    <!-- Anime Nexus Settings -->
-                    <div class="verticalSection">
-                        <h3 class="sectionTitle">Anime Nexus (anime.nexus) — English Sub &amp; Dub — Experimental</h3>
-
-                        <div class="checkboxContainer checkboxContainer-withDescription">
-                            <label>
-                                <input is="emby-checkbox" type="checkbox" id="chkAnimenexusEnabled" />
-                                <span>Enable Anime Nexus</span>
-                            </label>
-                            <div class="fieldDescription checkboxFieldDescription">
-                                <strong>Disabled by default.</strong> anime.nexus has no publicly documented API and blocks automated
-                                research tools via robots.txt, so this integration is an unverified best-effort guess at the site's
-                                REST conventions. It may not work at all. Enable it only if you're willing to debug it — check the
-                                plugin logs for the actual HTTP responses if searches or episodes come back empty.
-                            </div>
-                        </div>
-
-                        <div class="inputContainer">
-                            <label class="inputLabel" for="txtAnimenexusPathSub">Download Path (English Sub)</label>
-                            <input is="emby-input" type="text" id="txtAnimenexusPathSub" placeholder="/Media/Anime/sub" />
-                        </div>
-
-                        <div class="inputContainer">
-                            <label class="inputLabel" for="txtAnimenexusPathDub">Download Path (English Dub)</label>
-                            <input is="emby-input" type="text" id="txtAnimenexusPathDub" placeholder="/Media/Anime/dub" />
-                            <div class="fieldDescription">Leave empty to use the English Sub path above.</div>
-                        </div>
-
-                        <div class="inputContainer">
-                            <label class="inputLabel" for="selAnimenexusLanguage">Preferred Language</label>
-                            <select is="emby-select" id="selAnimenexusLanguage">
-                                <option value="sub">English Sub</option>
-                                <option value="dub">English Dub</option>
-                            </select>
-                        </div>
-                    </div>
-
                     <!-- AniWatch Settings -->
                     <div class="verticalSection">
                         <h3 class="sectionTitle">AniWatch (aniwatch.one) — English Sub &amp; Dub</h3>
@@ -189,8 +152,9 @@
                             <div class="fieldDescription checkboxFieldDescription">
                                 Enable searching and downloading anime from AniWatch. Offers both English Sub and English Dub.
                                 Scraped directly from the site's own HTML (no anti-bot layer encountered). Of the servers it offers
-                                per episode, only the DoodStream-backed one has a working extractor so far — episodes without a
-                                DoodStream server won't show a download option yet.
+                                per episode, MegaCloud and DoodStream have working extractors — MegaCloud is preferred by default
+                                since DoodStream's anti-bot check can block a server's IP under sustained batch-download traffic;
+                                episodes are downloaded via DoodStream automatically as a fallback if MegaCloud fails.
                             </div>
                         </div>
 

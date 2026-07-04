@@ -37,13 +37,6 @@ export default function (view, params) {
             view.querySelector('#txtAnikotoPathDub').value = anikoto.DownloadPathDub || '';
             view.querySelector('#selAnikotoLanguage').value = anikoto.PreferredLanguage || 'sub';
 
-            // Anime Nexus (Sub + Dub, experimental)
-            var animenexus = getSiteConfig(config, 'animenexus');
-            view.querySelector('#chkAnimenexusEnabled').checked = animenexus.Enabled === true;
-            view.querySelector('#txtAnimenexusPathSub').value = animenexus.DownloadPathSub || animenexus.DownloadPath || '';
-            view.querySelector('#txtAnimenexusPathDub').value = animenexus.DownloadPathDub || '';
-            view.querySelector('#selAnimenexusLanguage').value = animenexus.PreferredLanguage || 'sub';
-
             // AniWatch (Sub + Dub)
             var aniwatch = getSiteConfig(config, 'aniwatch');
             view.querySelector('#chkAniwatchEnabled').checked = aniwatch.Enabled !== false;
@@ -78,15 +71,6 @@ export default function (view, params) {
             anikoto.PreferredLanguage = view.querySelector('#selAnikotoLanguage').value;
             anikoto.PreferredProvider = 'Megaplay';
 
-            // Anime Nexus
-            var animenexus = getSiteConfig(config, 'animenexus');
-            animenexus.Enabled = view.querySelector('#chkAnimenexusEnabled').checked;
-            animenexus.DownloadPathSub = view.querySelector('#txtAnimenexusPathSub').value.trim();
-            animenexus.DownloadPathDub = view.querySelector('#txtAnimenexusPathDub').value.trim();
-            animenexus.DownloadPath = animenexus.DownloadPathSub;
-            animenexus.PreferredLanguage = view.querySelector('#selAnimenexusLanguage').value;
-            animenexus.PreferredProvider = 'AnimeNexus';
-
             // AniWatch
             var aniwatch = getSiteConfig(config, 'aniwatch');
             aniwatch.Enabled = view.querySelector('#chkAniwatchEnabled').checked;
@@ -94,7 +78,8 @@ export default function (view, params) {
             aniwatch.DownloadPathDub = view.querySelector('#txtAniwatchPathDub').value.trim();
             aniwatch.DownloadPath = aniwatch.DownloadPathSub;
             aniwatch.PreferredLanguage = view.querySelector('#selAniwatchLanguage').value;
-            aniwatch.PreferredProvider = 'DoodStream';
+            aniwatch.PreferredProvider = 'MegaCloud';
+            aniwatch.FallbackProvider = 'DoodStream';
 
             ApiClient.updatePluginConfiguration(pluginId, config).then(function () {
                 Dashboard.processPluginConfigurationUpdateResult();

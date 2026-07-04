@@ -37,7 +37,7 @@ public abstract class StreamingSiteService
     /// <summary>Logger instance for derived classes.</summary>
     protected ILogger Logger { get; }
 
-    /// <summary>Gets the source identifier (e.g. "anikoto", "animenexus").</summary>
+    /// <summary>Gets the source identifier (e.g. "anikoto", "aniwatch").</summary>
     public abstract string SourceName { get; }
 
     /// <summary>Gets the human-readable display name shown in the UI (e.g. "Anikoto").</summary>

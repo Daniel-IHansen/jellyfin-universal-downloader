@@ -11,7 +11,7 @@ namespace Jellyfin.Plugin.AniBridge.Services;
 
 /// <summary>
 /// Service for interacting with AniWatch (aniwatch.one), a HiAnime-style anime streaming site.
-/// Unlike Anikoto/Anime Nexus, aniwatch.one itself is directly fetchable (no anti-bot layer) and
+/// Unlike Anikoto, aniwatch.one itself is directly fetchable (no anti-bot layer) and
 /// serves everything — search results, the full episode list, and both sub/dub provider embed
 /// URLs — as plain server-rendered HTML on a single page per anime, with no AJAX calls needed
 /// (verified against shows with 500+ episodes: every episode across every paginated tab is
@@ -22,10 +22,13 @@ namespace Jellyfin.Plugin.AniBridge.Services;
 /// <c>&lt;div class="item server-item" data-type="sub|dub" data-url="https://host/e/id"&gt;</c> —
 /// no separate redirect/ajax step needed, so <see cref="ResolveRedirectAsync"/> is a no-op.
 /// Three servers are offered site-wide (verified across multiple titles): a MegaCloud/rabbitstream
-/// embed (<c>megacloudx.net</c>), a custom SPA player (<c>weneverbeenfree.com</c>), and a
-/// whitelabelled DoodStream instance (<c>playmogo.com</c>) — only the last has a working
-/// extractor (<see cref="Extractors.DoodStreamExtractor"/>) so far, so only that one is surfaced
-/// here; add the other two once their embeds have been decoded.
+/// embed (<c>megacloudx.net</c>, decoded by <see cref="Extractors.MegaCloudExtractor"/>), a custom
+/// SPA player (rotates hostname — seen as <c>weneverbeenfree.com</c> and <c>gn1r5n.org</c>; no
+/// extractor yet, its video source isn't served from any endpoint findable by static inspection of
+/// its JS bundle), and a whitelabelled DoodStream instance (<c>playmogo.com</c>, decoded by
+/// <see cref="Extractors.DoodStreamExtractor"/> but prone to anti-bot blocks under sustained
+/// batch-download traffic — prefer MegaCloud when both are available). Unrecognized/undecoded
+/// hosts are silently skipped rather than surfaced as a dead "no extractor available" error.
 /// </summary>
 public class AniWatchService : StreamingSiteService
 {
@@ -40,6 +43,7 @@ public class AniWatchService : StreamingSiteService
     private static readonly IReadOnlyDictionary<string, string> KnownProviderHosts =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
+            ["megacloudx.net"] = "MegaCloud",
             ["playmogo.com"] = "DoodStream",
         };
 
