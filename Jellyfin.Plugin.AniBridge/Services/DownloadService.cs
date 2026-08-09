@@ -1067,8 +1067,22 @@ public class DownloadService
                     segmentRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 segmentResponse.EnsureSuccessStatusCode();
 
-                await using var segmentStream = await segmentResponse.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-                await segmentStream.CopyToAsync(output, cancellationToken).ConfigureAwait(false);
+                var segmentBytes = await segmentResponse.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
+
+                // A real MPEG-TS segment always starts with the sync byte 0x47. This CDN has
+                // been observed returning a small decoy image with an HTTP 200 (not an error
+                // status, so EnsureSuccessStatusCode above doesn't catch it) for a segment
+                // request instead of real video — silently concatenating that in produced a file
+                // that "downloaded" fine (right size, right duration) but whose video track was
+                // actually a 1x1 PNG with no audio at all. Reject anything that isn't real TS so
+                // the download fails cleanly and retries instead of completing corrupted.
+                if (segmentBytes.Length == 0 || segmentBytes[0] != 0x47)
+                {
+                    throw new InvalidOperationException(
+                        $"HLS segment {i + 1}/{segmentUrls.Count} did not look like valid MPEG-TS data (possible CDN block or decoy response)");
+                }
+
+                await output.WriteAsync(segmentBytes, cancellationToken).ConfigureAwait(false);
 
                 task.Progress = (int)((i + 1) / (double)segmentUrls.Count * 50);
             }
