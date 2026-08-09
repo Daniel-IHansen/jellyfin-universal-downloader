@@ -78,6 +78,11 @@ export default function (view, params) {
         }
     }
 
+    // Above this many episodes in a season, showing every episode as its own card gets
+    // unwieldy (e.g. long-running shonen with 500-1000+ episodes) — switch to a dropdown
+    // picker + single detail panel instead of a giant flat list.
+    var EPISODE_DROPDOWN_THRESHOLD = 50;
+
     // English Sub/Dub only, everywhere. Language keys are canonical: "sub" / "dub".
     var LANG_NAMES = { sub: 'English Sub', dub: 'English Dub' };
 
@@ -129,6 +134,14 @@ export default function (view, params) {
         historyStatusFilter: null,
         historySeriesFilter: null,
         seasonGeneration: 0,
+
+        // Episode browser state: the raw episode list for the currently loaded season, the
+        // filler/canon lookup result for the current series (null = unavailable/not fetched),
+        // whether the "Canon only" toggle is on, and which episode is selected in dropdown mode.
+        currentEpisodes: null,
+        fillerEpisodes: null,
+        canonOnly: false,
+        selectedEpisodeIndex: 0,
 
         enabledSources: [],
 
@@ -449,7 +462,6 @@ export default function (view, params) {
         renderEpisodes: function (episodes, seasonUrl, generation) {
             var epContainer = view.querySelector('#aw-episodes');
             var barContainer = view.querySelector('#aw-season-bar');
-            var source = this.currentSeriesSource || 'aniworld';
 
             if (!episodes || episodes.length === 0) {
                 epContainer.innerHTML = '<div class="aw-empty"><div class="aw-empty-icon"><i class="aw-icon" data-lucide="inbox"></i></div>No episodes found.</div>';
@@ -458,51 +470,192 @@ export default function (view, params) {
                 return;
             }
 
-            if (barContainer) {
-                var bar = '<div class="aw-season-actions">';
-                bar += '<span class="aw-ep-count">' + episodes.length + ' episode' + (episodes.length === 1 ? '' : 's') + '</span>';
-                bar += '<select id="aw-season-lang" class="aw-lang-select" title="Language for downloads">';
-                bar += getLangOptionsHtml(source);
-                bar += '</select>';
-                bar += '<label style="display:inline-flex;align-items:center;gap:0.3em;font-size:0.82em;cursor:pointer;opacity:0.85" title="Priority downloads are added to the front of the queue"><input type="checkbox" id="aw-priority-cb" style="cursor:pointer"> Priority</label>';
-                bar += '<label style="display:inline-flex;align-items:center;gap:0.3em;font-size:0.82em;cursor:pointer;opacity:0.85" title="Redownload episodes even if they are already flagged as downloaded"><input type="checkbox" id="aw-force-cb" style="cursor:pointer"> Force</label>';
-                bar += '<button class="aw-btn aw-btn-success aw-btn-sm" onclick="window.AW.downloadSeason(\'' + encodeURIComponent(seasonUrl) + '\')"><i class="aw-icon" data-lucide="download"></i> Download Season</button>';
-                if (AW.currentSeriesUrl) {
-                    bar += '<button class="aw-btn aw-btn-all-seasons aw-btn-sm" onclick="window.AW.downloadAllSeasons(\'' + encodeURIComponent(AW.currentSeriesUrl) + '\')"><i class="aw-icon" data-lucide="download"></i> Download All Seasons</button>';
-                }
-                bar += '</div>';
+            this.currentEpisodes = episodes;
+            this.canonOnly = false;
+            this.selectedEpisodeIndex = 0;
 
-                barContainer.innerHTML = bar;
+            var myGen = generation || this.seasonGeneration;
+            this._loadFillerData(myGen, function () {
+                if (AW.seasonGeneration !== myGen) return;
+                AW._renderEpisodeBar(episodes, seasonUrl);
+                AW._renderEpisodeList(myGen);
+            });
+        },
+
+        // Best-effort filler/canon lookup for the current series (see FillerListService on the
+        // backend). Failure or unavailability just means the "Canon only" checkbox isn't shown —
+        // episode browsing/downloading is unaffected either way.
+        _loadFillerData: function (generation, cb) {
+            var title = this.currentSeriesTitle;
+            if (!title) {
+                this.fillerEpisodes = null;
+                cb();
+                return;
             }
+
+            ApiClient.fetch({
+                url: ApiClient.getUrl('AniBridge/FillerEpisodes', { title: title }),
+                type: 'GET',
+                dataType: 'json'
+            }).then(function (result) {
+                if (AW.seasonGeneration !== generation) return;
+                AW.fillerEpisodes = (result && result.available) ? result.filler : null;
+                cb();
+            }).catch(function () {
+                if (AW.seasonGeneration !== generation) return;
+                AW.fillerEpisodes = null;
+                cb();
+            });
+        },
+
+        _isFiller: function (ep) {
+            return !!(this.fillerEpisodes && !ep.IsMovie && this.fillerEpisodes.indexOf(ep.Number) !== -1);
+        },
+
+        _visibleEpisodes: function () {
+            var episodes = this.currentEpisodes || [];
+            if (!this.canonOnly || !this.fillerEpisodes) return episodes;
+            var self = this;
+            return episodes.filter(function (ep) { return !self._isFiller(ep); });
+        },
+
+        toggleCanonOnly: function () {
+            var cb = view.querySelector('#aw-canon-cb');
+            this.canonOnly = cb ? cb.checked : false;
+            this.selectedEpisodeIndex = 0;
+            this._renderEpisodeList(this.seasonGeneration);
+        },
+
+        _renderEpisodeBar: function (episodes, seasonUrl) {
+            var barContainer = view.querySelector('#aw-season-bar');
+            if (!barContainer) return;
+            var source = this.currentSeriesSource || 'aniworld';
+
+            var bar = '<div class="aw-season-actions">';
+            bar += '<span class="aw-ep-count">' + episodes.length + ' episode' + (episodes.length === 1 ? '' : 's') + '</span>';
+            bar += '<select id="aw-season-lang" class="aw-lang-select" title="Language for downloads">';
+            bar += getLangOptionsHtml(source);
+            bar += '</select>';
+            bar += '<label style="display:inline-flex;align-items:center;gap:0.3em;font-size:0.82em;cursor:pointer;opacity:0.85" title="Priority downloads are added to the front of the queue"><input type="checkbox" id="aw-priority-cb" style="cursor:pointer"> Priority</label>';
+            bar += '<label style="display:inline-flex;align-items:center;gap:0.3em;font-size:0.82em;cursor:pointer;opacity:0.85" title="Redownload episodes even if they are already flagged as downloaded"><input type="checkbox" id="aw-force-cb" style="cursor:pointer"> Force</label>';
+            if (this.fillerEpisodes) {
+                bar += '<label style="display:inline-flex;align-items:center;gap:0.3em;font-size:0.82em;cursor:pointer;opacity:0.85" title="Hide filler episodes, showing only canon (and mixed canon/filler) episodes"><input type="checkbox" id="aw-canon-cb" onchange="window.AW.toggleCanonOnly()"' + (this.canonOnly ? ' checked' : '') + ' style="cursor:pointer"> Canon only</label>';
+            }
+            bar += '<button class="aw-btn aw-btn-success aw-btn-sm" onclick="window.AW.downloadSeason(\'' + encodeURIComponent(seasonUrl) + '\')"><i class="aw-icon" data-lucide="download"></i> Download Season</button>';
+            if (AW.currentSeriesUrl) {
+                bar += '<button class="aw-btn aw-btn-all-seasons aw-btn-sm" onclick="window.AW.downloadAllSeasons(\'' + encodeURIComponent(AW.currentSeriesUrl) + '\')"><i class="aw-icon" data-lucide="download"></i> Download All Seasons</button>';
+            }
+            bar += '</div>';
+
+            barContainer.innerHTML = bar;
+        },
+
+        // Chooses between the flat card grid (small seasons) and the dropdown + single-detail
+        // view (large seasons), then renders it. The dropdown/grid choice is based on the
+        // season's total episode count, not the canon-filtered count, so toggling "Canon only"
+        // never flips the layout out from under the user mid-browse.
+        _renderEpisodeList: function (generation) {
+            var epContainer = view.querySelector('#aw-episodes');
+            if (!epContainer) return;
+
+            var episodes = this._visibleEpisodes();
+            if (episodes.length === 0) {
+                epContainer.innerHTML = '<div class="aw-empty">No episodes match the current filter.</div>';
+                icons();
+                return;
+            }
+
+            if ((this.currentEpisodes || []).length > EPISODE_DROPDOWN_THRESHOLD) {
+                this._renderEpisodeDropdown(episodes, generation);
+            } else {
+                this._renderEpisodeGrid(episodes, generation);
+            }
+        },
+
+        _renderEpisodeGrid: function (episodes, generation) {
+            var epContainer = view.querySelector('#aw-episodes');
 
             var html = '<div class="aw-episodes">';
             episodes.forEach(function (ep) {
-                var label = ep.IsMovie ? 'Movie ' + ep.Number : ep.Number;
-                var epId = 'ep-' + ep.Number + '-' + (ep.IsMovie ? 'movie' : 'ep');
-                html += '<div class="aw-ep" id="' + epId + '">';
-                html += '<span class="aw-ep-num">' + label + '</span>';
-                html += '<span class="aw-ep-title" id="' + epId + '-title">Loading...</span>';
-                html += '<span class="aw-ep-downloaded" id="' + epId + '-dl" style="display:none"></span>';
-                html += '<div class="aw-ep-actions">';
-                html += '<button class="aw-btn aw-btn-primary aw-btn-sm" onclick="window.AW.downloadEpisode(\'' + encodeURIComponent(ep.Url) + '\')"><i class="aw-icon" data-lucide="download"></i> Download</button>';
-                html += '<button class="aw-btn aw-btn-secondary aw-btn-sm" onclick="window.AW.toggleProviders(\'' + encodeURIComponent(ep.Url) + '\', \'' + epId + '\')">Providers</button>';
-                html += '</div>';
-                html += '</div>';
-                html += '<div id="' + epId + '-providers" class="aw-ep-providers" style="display:none"></div>';
+                html += AW._episodeCardHtml(ep);
             });
             html += '</div>';
             epContainer.innerHTML = html;
             icons();
 
-            var myGen = generation || AW.seasonGeneration;
             episodes.forEach(function (ep, idx) {
                 var epId = 'ep-' + ep.Number + '-' + (ep.IsMovie ? 'movie' : 'ep');
                 setTimeout(function () {
-                    if (AW.seasonGeneration !== myGen) return;
-                    AW.fetchEpisodeTitle(ep.Url, epId, myGen);
+                    if (AW.seasonGeneration !== generation) return;
+                    AW.fetchEpisodeTitle(ep.Url, epId, generation);
                     AW.checkIsDownloaded(ep.Url, epId);
                 }, idx * 150);
             });
+        },
+
+        _renderEpisodeDropdown: function (episodes, generation) {
+            var epContainer = view.querySelector('#aw-episodes');
+
+            if (this.selectedEpisodeIndex >= episodes.length) {
+                this.selectedEpisodeIndex = 0;
+            }
+
+            var html = '<div class="aw-ep-dropdown-bar">';
+            html += '<select id="aw-ep-select" class="aw-lang-select" onchange="window.AW.selectEpisodeFromDropdown(this.value)">';
+            episodes.forEach(function (ep, idx) {
+                var label = (ep.IsMovie ? 'Movie ' : 'Episode ') + ep.Number + (AW._isFiller(ep) ? ' (Filler)' : '');
+                html += '<option value="' + idx + '"' + (idx === AW.selectedEpisodeIndex ? ' selected' : '') + '>' + esc(label) + '</option>';
+            });
+            html += '</select>';
+            html += '</div>';
+            html += '<div id="aw-ep-detail"></div>';
+            epContainer.innerHTML = html;
+            icons();
+
+            this._renderSelectedEpisodeDetail(episodes, generation);
+        },
+
+        selectEpisodeFromDropdown: function (idxStr) {
+            this.selectedEpisodeIndex = parseInt(idxStr, 10) || 0;
+            this._renderSelectedEpisodeDetail(this._visibleEpisodes(), this.seasonGeneration);
+        },
+
+        _renderSelectedEpisodeDetail: function (episodes, generation) {
+            var detail = view.querySelector('#aw-ep-detail');
+            if (!detail) return;
+
+            var ep = episodes[this.selectedEpisodeIndex];
+            if (!ep) return;
+
+            detail.innerHTML = this._episodeCardHtml(ep, true);
+            icons();
+
+            var epId = 'ep-' + ep.Number + '-' + (ep.IsMovie ? 'movie' : 'ep');
+            this.fetchEpisodeTitle(ep.Url, epId, generation);
+            this.checkIsDownloaded(ep.Url, epId);
+        },
+
+        // Shared markup for one episode's card/detail block, used by both the flat grid and the
+        // dropdown's single-episode detail panel.
+        _episodeCardHtml: function (ep, single) {
+            var label = ep.IsMovie ? 'Movie ' + ep.Number : ep.Number;
+            var epId = 'ep-' + ep.Number + '-' + (ep.IsMovie ? 'movie' : 'ep');
+            var cls = 'aw-ep' + (single ? ' aw-ep-single' : '') + (this._isFiller(ep) ? ' aw-ep-filler' : '');
+
+            var html = '<div class="' + cls + '" id="' + epId + '">';
+            html += '<span class="aw-ep-num">' + label + '</span>';
+            html += '<span class="aw-ep-title" id="' + epId + '-title">Loading...</span>';
+            if (this._isFiller(ep)) {
+                html += '<span class="aw-ep-filler-badge" title="Filler episode">Filler</span>';
+            }
+            html += '<span class="aw-ep-downloaded" id="' + epId + '-dl" style="display:none"></span>';
+            html += '<div class="aw-ep-actions">';
+            html += '<button class="aw-btn aw-btn-primary aw-btn-sm" onclick="window.AW.downloadEpisode(\'' + encodeURIComponent(ep.Url) + '\')"><i class="aw-icon" data-lucide="download"></i> Download</button>';
+            html += '<button class="aw-btn aw-btn-secondary aw-btn-sm" onclick="window.AW.toggleProviders(\'' + encodeURIComponent(ep.Url) + '\', \'' + epId + '\')">Providers</button>';
+            html += '</div>';
+            html += '</div>';
+            html += '<div id="' + epId + '-providers" class="aw-ep-providers" style="display:none"></div>';
+            return html;
         },
 
         fetchEpisodeTitle: function (url, epId, generation) {

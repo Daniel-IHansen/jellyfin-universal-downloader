@@ -33,6 +33,7 @@ public class DownloaderController : ControllerBase
     private readonly Dictionary<string, StreamingSiteService> _services;
     private readonly DownloadService _downloadService;
     private readonly DownloadHistoryService _historyService;
+    private readonly FillerListService _fillerListService;
     private readonly IServerConfigurationManager _configManager;
     private readonly ILogger<DownloaderController> _logger;
 
@@ -43,12 +44,14 @@ public class DownloaderController : ControllerBase
         IEnumerable<StreamingSiteService> services,
         DownloadService downloadService,
         DownloadHistoryService historyService,
+        FillerListService fillerListService,
         IServerConfigurationManager configManager,
         ILogger<DownloaderController> logger)
     {
         _services = services.ToDictionary(s => s.SourceName, StringComparer.OrdinalIgnoreCase);
         _downloadService = downloadService;
         _historyService = historyService;
+        _fillerListService = fillerListService;
         _configManager = configManager;
         _logger = logger;
     }
@@ -300,6 +303,25 @@ public class DownloaderController : ControllerBase
         var resolvedSource = ResolveSource(source);
         var result = await GetService(resolvedSource).GetNewReleasesAsync(cancellationToken).ConfigureAwait(false);
         return Ok(result);
+    }
+
+    /// <summary>
+    /// Best-effort filler/canon episode lookup for a series (via animefillerlist.com), used by
+    /// the "Canon only" toggle in the episode browser. <c>available: false</c> means the series
+    /// isn't listed there, not that it has no filler episodes.
+    /// </summary>
+    [HttpGet("FillerEpisodes")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult> GetFillerEpisodes(
+        [Required] string title,
+        CancellationToken cancellationToken = default)
+    {
+        var filler = await _fillerListService.GetFillerEpisodesAsync(title, cancellationToken).ConfigureAwait(false);
+        return Ok(new
+        {
+            available = filler != null,
+            filler = filler ?? (IReadOnlyCollection<int>)Array.Empty<int>(),
+        });
     }
 
     // ── Downloads ───────────────────────────────────────────────────

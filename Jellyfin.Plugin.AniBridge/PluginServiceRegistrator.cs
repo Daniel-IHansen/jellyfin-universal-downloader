@@ -34,6 +34,7 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
 
         serviceCollection.AddSingleton<DownloadHistoryService>();
         serviceCollection.AddSingleton<DownloadService>();
+        serviceCollection.AddSingleton<FillerListService>();
         serviceCollection.AddSingleton<IStreamExtractor, MegaplayExtractor>();
         serviceCollection.AddSingleton<IStreamExtractor, DoodStreamExtractor>();
         serviceCollection.AddSingleton<IStreamExtractor, MegaCloudExtractor>();
