@@ -8,6 +8,14 @@
     "category": "General",
     "versions": [
       {
+        "version": "2.3.1.0",
+        "changelog": "v2.3.1.0\n- Fix: Megaplay episodes downloading \"successfully\" (right file size, right duration) but not playing \u2014 Jellyfin would report their video track as a 1x1 png image with no audio at all. The HLS segment downloader only checked the HTTP status code before concatenating a segment into the output file; megaplay.buzz's CDN has been observed returning a small decoy image with a 200 OK instead of a real video segment, which got silently muxed in as if it were legitimate. Every segment is now checked for the MPEG-TS sync byte (0x47) before being accepted, so a decoy/bad response now fails the download cleanly (triggering the existing retry/fallback logic) instead of completing corrupted. Episodes downloaded before this fix that don't play should be re-downloaded with Force enabled.",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://github.com/Daniel-IHansen/jellyfin-universal-downloader/releases/download/v2.3.1.0/jellyfin-anibridge-downloader-v2.3.1.0.zip",
+        "checksum": "3a2230122dcc939c27fd6ea9cfffada1",
+        "timestamp": "2026-08-09T20:33:21Z"
+      },
+      {
         "version": "2.3.0.0",
         "changelog": "v2.3.0.0\n- Fix: Megaplay downloads still occasionally failing after all retries with ffmpeg exit 234 (\"Stream map ... matches no streams\" / \"Failed to set value '0:a:0' for option 'map': Invalid argument\") \u2014 the v2.0.4.0 subtitle-muxing change reintroduced explicit -map 0:v:0/0:a:0/1:s:0 selectors, and some episodes' chosen HLS variant turns out to have no audio stream at all, which ffmpeg treats as a hard parse error rather than just muxing what exists. All three maps are now optional (trailing '?'), and ffmpeg failures now surface the last 20 lines of stderr instead of 8 for easier future diagnosis.\n- Feature: Long-running seasons (over 50 episodes) now show a dropdown episode picker with a single detail/download panel instead of a giant flat list of cards.\n- Feature: Added a \"Canon only\" toggle in the episode browser, filtering out filler episodes using a best-effort lookup against animefillerlist.com. The toggle only appears when the current series is found there; unlisted series browse exactly as before.",
         "targetAbi": "10.11.0.0",
