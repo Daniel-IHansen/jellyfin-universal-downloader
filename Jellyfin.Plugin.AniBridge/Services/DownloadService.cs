@@ -924,13 +924,17 @@ public class DownloadService
 
                 // With a second input, ffmpeg's automatic stream selection can no longer be
                 // trusted to grab the right streams from each (the same ambiguity that caused
-                // the earlier HLS multi-program failures) — map explicitly.
+                // the earlier HLS multi-program failures) — map explicitly. The trailing '?'
+                // makes each map optional: some episodes' chosen HLS variant turned out to have
+                // no audio stream at all, and without '?' ffmpeg treats a missing stream as a
+                // fatal "Invalid argument" (exit 234) instead of just muxing what's actually
+                // there.
                 startInfo.ArgumentList.Add("-map");
-                startInfo.ArgumentList.Add("0:v:0");
+                startInfo.ArgumentList.Add("0:v:0?");
                 startInfo.ArgumentList.Add("-map");
-                startInfo.ArgumentList.Add("0:a:0");
+                startInfo.ArgumentList.Add("0:a:0?");
                 startInfo.ArgumentList.Add("-map");
-                startInfo.ArgumentList.Add("1:s:0");
+                startInfo.ArgumentList.Add("1:s:0?");
             }
 
             startInfo.ArgumentList.Add("-c");
@@ -1086,7 +1090,7 @@ public class DownloadService
         // Keep the last few stderr lines so a failure can surface *why* ffmpeg failed (e.g. an
         // HTTP 403 from the CDN) instead of just the bare exit code.
         var recentLines = new Queue<string>();
-        const int MaxRecentLines = 8;
+        const int MaxRecentLines = 20;
 
         var stderrTask = Task.Run(async () =>
         {
